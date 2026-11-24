@@ -1,0 +1,45 @@
+services:
+  # Laravel app: PHP 8.3 + Composer nằm trong container, không cần cài gì lên máy
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/var/www/html
+    environment:
+      DB_HOST: mariadb   # trong mạng docker, gọi DB bằng tên service
+      DB_PORT: "3306"
+    depends_on:
+      mariadb:
+        condition: service_healthy
+
+  # MariaDB 11: GLOBAL sql_mode khởi tạo như dưới; đổi bằng HeidiSQL khi trình bày
+  mariadb:
+    image: mariadb:11
+    command:
+      - --sql-mode=STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION
+      - --character-set-server=utf8mb4
+    environment:
+      MARIADB_ROOT_PASSWORD: secret
+      MARIADB_ROOT_HOST: "%"
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      retries: 20
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./docker/initdb:/docker-entrypoint-initdb.d:ro
+
+  # Tùy chọn: docker compose --profile mysql up -d  (so sánh mặc định của MySQL 8.4)
+  mysql:
+    image: mysql:8.4
+    profiles: ["mysql"]
+    command: --character-set-server=utf8mb4
+    environment:
+      MYSQL_ROOT_PASSWORD: secret
+      MYSQL_ROOT_HOST: "%"
+    ports:
+      - "3307:3306"
+    volumes:
+      - ./docker/initdb:/docker-entrypoint-initdb.d:ro

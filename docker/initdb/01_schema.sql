@@ -1,0 +1,12 @@
+CREATE DATABASE IF NOT EXISTS strict_demo CHARACTER SET utf8mb4;
+USE strict_demo;
+CREATE TABLE products (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(10) NOT NULL,
+  price INT NOT NULL,
+  stock TINYINT NOT NULL,
+  sale_date DATE NULL,
+  ratio DECIMAL(6,2) NULL,
+  note VARCHAR(50) NOT NULL          -- cố ý không có DEFAULT
+) ENGINE=InnoDB;
+CREATE TABLE log_myisam (id INT PRIMARY KEY, level TINYINT NOT NULL) ENGINE=MyISAM;
