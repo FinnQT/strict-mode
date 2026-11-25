@@ -126,12 +126,15 @@ class PlaygroundController extends Controller
         } catch (QueryException $e) {
             $capture = false;
             $sqls[] = self::interpolate($e->getSql(), $e->getBindings(), $db);
+            $pdo = $e->getPrevious();
             $error = [
                 'http_status' => 500,
                 'chain' => ['PDOException', QueryException::class],
                 'sqlstate' => $e->errorInfo[0] ?? null,
                 'code' => $e->errorInfo[1] ?? null,
                 'message' => $e->errorInfo[2] ?? $e->getMessage(),
+                'pdo_message' => $pdo ? $pdo->getMessage() : null,
+                'laravel_message' => $e->getMessage(),
             ];
             if ($scenario === 'myisam') { // MyISAM không rollback: đọc lại để thấy dòng đã lỡ ghi
                 $rows = array_map(fn ($o) => (array) $o, DB::select('SELECT * FROM log_myisam ORDER BY id'));

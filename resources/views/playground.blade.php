@@ -4,179 +4,810 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Strict Mode Playground</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-<script src="https://cdn.tailwindcss.com"></script>
-<script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['Nunito', 'ui-sans-serif', 'system-ui', 'sans-serif'] } } } }</script>
 <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
 <style>
-  /* ===== Token thiết kế: khoảng cách 4/8/12/16/24/32/48; góc vuông bo nhẹ 4px ===== */
+  /* ===== Apple Human Interface Guidelines Design System ===== */
   :root {
-    --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s6: 24px; --s8: 32px; --s12: 48px;
-    --r: 4px;
-    --bg: #F1F3F6; --ink: #111827; --mute: #4B5563; --soft: #F1F5F9; --head: #E8ECF1;
-    --line: #B8C1CE; --line-strong: #8794A6;
-    --accent: #1D4ED8; --accent-dark: #1E3A8A; --accent-bg: #E3ECFE;
-    --amber: #FEF0C7; --amber-line: #E3B341; --amber-strong: #FCE08A; --amber-ink: #6B3A0C;
-    --mint: #D8F5E8; --mint-line: #4DBF94; --mint-strong: #A7F0CF; --mint-ink: #065F46;
-    --err: #BE123C;
-    --bar-h: 230px;
+    --s1: 4px;
+    --s2: 8px;
+    --s3: 12px;
+    --s4: 16px;
+    --s5: 20px;
+    --s6: 24px;
+    --s8: 32px;
+    --s10: 40px;
+    --s12: 48px;
+
+    --r-xs: 6px;
+    --r-sm: 8px;
+    --r-md: 10px;
+    --r-lg: 14px;
+    --r-xl: 18px;
+    --r-pill: 9999px;
+
+    /* Palette */
+    --bg: #F5F5F7;
+    --surface: #FFFFFF;
+    --surface-subtle: #FAFAFC;
+    --surface-secondary: #F2F2F7;
+    --surface-glass: rgba(255, 255, 255, 0.78);
+
+    --ink: #1D1D1F;
+    --ink-secondary: #515154;
+    --mute: #86868B;
+
+    --line: rgba(0, 0, 0, 0.08);
+    --line-strong: rgba(0, 0, 0, 0.14);
+
+    /* Primary Accent (Apple Blue) */
+    --accent: #0071E3;
+    --accent-hover: #0077ED;
+    --accent-active: #0068D1;
+    --accent-bg: rgba(0, 113, 227, 0.1);
+    --accent-ring: rgba(0, 113, 227, 0.28);
+
+    /* Semantic: Mint / Success (Strict Guarded / Clean) */
+    --mint: #EAF8EF;
+    --mint-line: rgba(52, 199, 89, 0.35);
+    --mint-strong: rgba(52, 199, 89, 0.16);
+    --mint-ink: #15682E;
+    --mint-dot: #34C759;
+
+    /* Semantic: Amber / Warning (Silent Corruption / Loose) */
+    --amber: #FFF8EB;
+    --amber-line: rgba(245, 158, 11, 0.38);
+    --amber-strong: rgba(245, 158, 11, 0.16);
+    --amber-ink: #92540A;
+    --amber-dot: #FF9F0A;
+
+    /* Semantic: Error / Danger */
+    --err: #D70015;
+    --err-bg: #FFF2F4;
+    --err-line: rgba(215, 0, 21, 0.25);
+
+    /* Shadows */
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.03);
+    --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.04);
+
+    /* Typography */
+    --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --font-mono: "SF Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+    --bar-h: 180px;
+    --ease: cubic-bezier(0.25, 0.1, 0.25, 1);
   }
+
+  *, *::before, *::after { box-sizing: border-box; }
   [v-cloak] { display: none; }
-  html { font-size: 16px; }
-  body { background: var(--bg); color: var(--ink); font: 17px/1.5 Nunito, ui-sans-serif, system-ui, sans-serif; }
-  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-  .cap { font-size: 15px; color: var(--mute); }
-  .h1 { font-size: 28px; font-weight: 800; line-height: 1.2; }
-  .h2 { font-size: 20px; font-weight: 800; line-height: 1.3; }
-  .wrap { max-width: 1440px; margin: 0 auto; padding-left: var(--s6); padding-right: var(--s6); }
-  .row { display: flex; align-items: center; gap: var(--s4); }
-  .grow { flex: 1; min-width: 0; }
-  button { cursor: pointer; font: inherit; border: 1px solid transparent; background: none; color: inherit; border-radius: var(--r); }
-
-  /* ===== Thanh mode ===== */
-  .modebar { position: sticky; top: 0; z-index: 20; transition: background-color .25s ease; border-bottom: 1px solid var(--line-strong); }
-  .modebar .wrap { position: relative; padding-top: var(--s4); padding-bottom: var(--s4); display: flex; flex-direction: column; gap: var(--s3); }
-  .lbl { width: 84px; flex: none; font-size: 14px; font-weight: 800; letter-spacing: .06em; color: var(--mute); text-transform: uppercase; }
-  .seg-wrap { display: flex; gap: var(--s1); padding: var(--s1); border-radius: 6px; background: #fff; border: 1px solid var(--line-strong); }
-  .seg { display: flex; flex-direction: column; align-items: flex-start; padding: var(--s2) var(--s4); line-height: 1.25; transition: background-color .25s ease; }
-  .seg small { font-size: 14px; color: var(--mute); }
-  .seg:hover { background: var(--soft); border-color: var(--line); }
-  .seg.on { background: var(--accent-bg); border-color: var(--accent); font-weight: 800; box-shadow: inset 4px 0 0 var(--accent); padding-left: 20px; }
-  .seg.on small { color: var(--accent-dark); }
-  .adv { padding: var(--s2) var(--s4); background: #fff; border-color: var(--line-strong); font-weight: 700; }
-  .adv:hover { background: var(--soft); }
-  .adv.on { background: var(--accent-bg); border-color: var(--accent); color: var(--accent-dark); }
-  .modeline { min-height: 44px; padding: var(--s2) var(--s3); background: rgba(255,255,255,.75); border: 1px solid var(--line); border-radius: var(--r); }
-  .modeline .mono { font-size: 16px; overflow-wrap: anywhere; }
-  .tk { color: #374151; }
-  .tk-strict { background: var(--mint-strong); color: var(--mint-ink); border-radius: 2px; padding: 0 var(--s1); font-weight: 700; }
-  .diff { transition: opacity .7s ease; margin-left: var(--s3); white-space: normal; }
-  .diff.fade { opacity: 0; }
-  .plus, .minus { font: 700 15px ui-monospace, Menlo, Consolas, monospace; border-radius: 2px; padding: 0 var(--s2); margin-right: var(--s2); display: inline-block; }
-  .plus { color: #047857; background: var(--mint); border: 1px solid var(--mint-line); }
-  .minus { color: #E11D48; background: #FFE4E6; border: 1px solid #FDA4AF; text-decoration: line-through; }
-  .live { display: inline-block; width: 8px; height: 8px; border-radius: 2px; background: #10B981; margin-left: var(--s1); vertical-align: middle; }
-  .badge { font-weight: 900; font-size: 17px; padding: var(--s1) var(--s4); border-radius: var(--r); white-space: nowrap; border: 1px solid; }
-  .badge.on { background: var(--mint-strong); color: var(--mint-ink); border-color: var(--mint-line); }
-  .badge.off { background: var(--amber-strong); color: var(--amber-ink); border-color: var(--amber-line); }
-  .mascot { font-size: 26px; line-height: 1; }
-  .drawer { position: absolute; left: var(--s6); right: var(--s6); top: 100%; background: #fff; border: 1px solid var(--line-strong); border-radius: 6px; padding: var(--s6); box-shadow: 0 8px 24px rgba(15,23,42,.15); display: grid; grid-template-columns: 1fr 1fr; gap: var(--s8); z-index: 30; }
-  .swrow { display: flex; align-items: center; gap: var(--s3); padding: var(--s1) 0; cursor: pointer; }
-  .code { background: var(--soft); border: 1px solid var(--line); border-radius: var(--r); padding: var(--s4); font-size: 15px; white-space: pre-wrap; overflow-wrap: anywhere; margin-top: var(--s2); }
-
-  /* ===== Switch tự style (vuông bo nhẹ) ===== */
-  input.sw { appearance: none; -webkit-appearance: none; width: 38px; height: 22px; border-radius: 4px; background: #CBD5E1; border: 1px solid var(--line-strong); position: relative; flex: none; cursor: pointer; transition: background-color .2s ease; outline: none; }
-  input.sw::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 2px; background: #fff; box-shadow: 0 0 0 1px var(--line-strong); transition: transform .2s ease; }
-  input.sw:checked { background: var(--accent); border-color: var(--accent-dark); }
-  input.sw:checked::after { transform: translateX(16px); }
-  input.sw:focus-visible { box-shadow: 0 0 0 3px rgba(29,78,216,.3); }
-
-  /* ===== Bố cục ===== */
-  .layout { display: block; padding-top: var(--s8); padding-bottom: var(--s12); }
-  .scn-col { display: flex; gap: var(--s4); overflow-x: auto; margin-bottom: var(--s6); padding-bottom: var(--s2); }
-  .grp { flex: none; display: flex; flex-direction: column; gap: var(--s2); }
-  .grp-name { font-size: 14px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--mute); padding: var(--s1) 0; white-space: nowrap; }
-  .scn { display: flex; gap: var(--s3); align-items: baseline; width: 100%; text-align: left; padding: var(--s2) var(--s3); white-space: nowrap; background: #fff; border-color: var(--line); }
-  .scn .n { width: 22px; color: var(--mute); font-weight: 700; flex: none; }
-  .scn:hover { background: var(--soft); border-color: var(--line-strong); }
-  .scn.on { background: var(--accent-bg); border-color: var(--accent); box-shadow: inset 4px 0 0 var(--accent); font-weight: 800; padding-left: 16px; }
-  .stage { display: flex; flex-direction: column; gap: var(--s8); min-width: 0; }
-  @media (min-width: 1280px) {
-    .layout { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: var(--s8); align-items: start; }
-    .scn-col { flex-direction: column; gap: var(--s6); overflow: visible; margin: 0; padding: 0;
-      position: sticky; top: calc(var(--bar-h) + var(--s4)); max-height: calc(100vh - var(--bar-h) - var(--s6)); overflow-y: auto; }
+  html { font-size: 16px; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.5;
+    letter-spacing: -0.01em;
   }
 
-  .card { background: #fff; border: 1px solid var(--line); border-radius: 6px; padding: var(--s6); box-shadow: 0 1px 2px rgba(15,23,42,.06); }
-  .fields { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s4) var(--s6); margin-top: var(--s6); }
-  .field { display: flex; flex-direction: column; gap: var(--s1); transition: opacity .2s ease; }
-  .field.off { opacity: .45; }
-  .field-head { display: flex; align-items: center; gap: var(--s2); }
-  .field-head label { margin-left: auto; display: flex; align-items: center; gap: var(--s2); font-size: 15px; color: var(--mute); cursor: pointer; }
-  .inp { width: 100%; background: #fff; border: 1px solid var(--line-strong); border-radius: var(--r); padding: var(--s3) var(--s4); font: 17px ui-monospace, Menlo, Consolas, monospace; color: var(--ink); }
-  .inp:focus { outline: 2px solid var(--accent); outline-offset: 0; border-color: var(--accent); }
-  .inp:disabled { text-decoration: line-through; background: var(--soft); }
-  .actions { display: flex; align-items: center; gap: var(--s4); margin-top: var(--s6); flex-wrap: wrap; }
-  .btn-main { background: var(--accent); color: #fff; border-color: var(--accent-dark); font-weight: 800; padding: var(--s3) var(--s8); }
-  .btn-main:hover { background: var(--accent-dark); }
-  .btn-soft { background: #fff; border-color: var(--line-strong); font-weight: 700; padding: var(--s3) var(--s6); }
-  .btn-soft:hover { background: var(--soft); }
-  .btn-quiet { padding: var(--s2) var(--s4); font-weight: 700; background: #fff; border-color: var(--line-strong); }
-  .btn-quiet:hover { background: var(--soft); }
-  button:disabled { opacity: .5; cursor: default; }
-  .btn-main kbd, .btn-soft kbd { font: inherit; font-size: 14px; font-weight: 600; opacity: .8; }
+  .mono { font-family: var(--font-mono); font-size: 0.92em; }
+  .cap { font-size: 13px; color: var(--mute); font-weight: 400; }
+  .h1 { font-size: 22px; font-weight: 600; line-height: 1.25; letter-spacing: -0.022em; margin: 0; color: var(--ink); }
+  .h2 { font-size: 18px; font-weight: 600; line-height: 1.3; letter-spacing: -0.018em; margin: 0; color: var(--ink); }
 
-  /* ===== Kết quả ===== */
-  .summary { font-size: 20px; font-weight: 800; line-height: 1.4; }
-  .res-grid { display: grid; gap: var(--s6); grid-template-columns: minmax(0, 1fr); }
-  .res-grid.two { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
-  .res { display: flex; flex-direction: column; gap: var(--s4); }
-  .banner { border: 1px solid; border-radius: var(--r); padding: var(--s4) var(--s6); font-size: 19px; font-weight: 800; line-height: 1.4; animation: slideIn .22s ease-out; }
-  .banner.amber { background: var(--amber); color: var(--amber-ink); border-color: var(--amber-line); box-shadow: inset 4px 0 0 var(--amber-line); }
-  .banner.mint { background: var(--mint); color: var(--mint-ink); border-color: var(--mint-line); box-shadow: inset 4px 0 0 var(--mint-line); }
-  .errline { margin-top: var(--s2); color: var(--err); font: 600 15px ui-monospace, Menlo, Consolas, monospace; overflow-wrap: anywhere; }
-  .tbl { width: 100%; border-collapse: collapse; border: 1px solid var(--line); }
-  .tbl th { text-align: left; font-size: 14px; font-weight: 800; color: var(--mute); padding: var(--s2) var(--s3); background: var(--head); border-bottom: 1px solid var(--line-strong); }
-  .tbl td { padding: var(--s2) var(--s3); font: 16px ui-monospace, Menlo, Consolas, monospace; border-top: 1px solid #E2E8F0; }
-  .tbl tr.chg td, .tbl tr.sus td, .tbl td.chg { background: var(--amber) !important; border-top-color: var(--amber-strong); }
+  .wrap { max-width: 1400px; margin: 0 auto; padding-left: var(--s6); padding-right: var(--s6); }
+  .row { display: flex; align-items: center; gap: var(--s4); flex-wrap: wrap; }
+  .grow { flex: 1; min-width: 0; }
+
+  button {
+    cursor: pointer;
+    font: inherit;
+    border: 1px solid transparent;
+    background: none;
+    color: inherit;
+    border-radius: var(--r-sm);
+    transition: background-color 180ms var(--ease), border-color 180ms var(--ease), color 180ms var(--ease), box-shadow 180ms var(--ease), opacity 180ms var(--ease);
+  }
+  button:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  /* ===== Sticky Translucent Top Bar (macOS / iCloud Header) ===== */
+  .modebar {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background: var(--surface-glass);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border-bottom: 1px solid var(--line);
+    transition: background-color 220ms var(--ease);
+  }
+  .modebar .wrap {
+    position: relative;
+    padding-top: var(--s4);
+    padding-bottom: var(--s4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--s3);
+  }
+  .topbar-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s4);
+  }
+  .brand-group {
+    display: flex;
+    align-items: baseline;
+    gap: var(--s3);
+    flex-wrap: wrap;
+  }
+  .db-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 10px;
+    border-radius: var(--r-pill);
+    background: var(--surface-secondary);
+    border: 1px solid var(--line);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--ink-secondary);
+  }
+  .toolbar-row {
+    display: flex;
+    align-items: center;
+    gap: var(--s3);
+    flex-wrap: wrap;
+  }
+  .lbl {
+    width: 76px;
+    flex: none;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--mute);
+    text-transform: uppercase;
+  }
+
+  /* macOS Segmented Control */
+  .seg-wrap {
+    display: inline-flex;
+    gap: 2px;
+    padding: 3px;
+    border-radius: var(--r-md);
+    background: rgba(118, 118, 128, 0.12);
+    flex-wrap: wrap;
+  }
+  .seg {
+    display: flex;
+    align-items: baseline;
+    gap: var(--s2);
+    padding: 6px 14px;
+    border-radius: 7px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink-secondary);
+    line-height: 1.25;
+  }
+  .seg small { font-size: 11.5px; color: var(--mute); font-weight: 400; }
+  .seg:hover:not(.on) { color: var(--ink); background: rgba(255, 255, 255, 0.45); }
+  .seg.on {
+    background: var(--surface);
+    color: var(--ink);
+    font-weight: 600;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 1px rgba(0, 0, 0, 0.06);
+  }
+  .seg.on small { color: var(--accent); }
+
+  .adv {
+    padding: 6px 14px;
+    background: var(--surface);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-sm);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink);
+    box-shadow: var(--shadow-sm);
+  }
+  .adv:hover { background: var(--surface-subtle); }
+  .adv.on {
+    background: var(--accent-bg);
+    border-color: var(--accent);
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  /* SQL Mode Inspector Strip */
+  .mode-stack {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--s2);
+  }
+  @media (max-width: 960px) {
+    .mode-stack { grid-template-columns: 1fr; }
+  }
+  .modeline {
+    min-height: 36px;
+    padding: 6px 12px;
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid var(--line);
+    border-radius: var(--r-sm);
+    display: flex;
+    align-items: center;
+    gap: var(--s2);
+  }
+  .modeline .mono { font-size: 12.5px; overflow-wrap: anywhere; line-height: 1.45; }
+  .tk { color: var(--ink-secondary); }
+  .tk-strict {
+    background: var(--mint-strong);
+    color: var(--mint-ink);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-weight: 600;
+  }
+  .diff { margin-left: var(--s2); white-space: normal; transition: opacity 250ms var(--ease); }
+  .diff.fade { opacity: 0; }
+  .plus, .minus {
+    font: 600 11.5px var(--font-mono);
+    border-radius: 4px;
+    padding: 1px 6px;
+    margin-right: var(--s1);
+    display: inline-block;
+  }
+  .plus { color: var(--mint-ink); background: var(--mint); border: 1px solid var(--mint-line); }
+  .minus { color: var(--err); background: var(--err-bg); border: 1px solid var(--err-line); text-decoration: line-through; }
+  .live {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: var(--r-pill);
+    background: var(--mint-dot);
+    margin-left: 4px;
+    vertical-align: middle;
+  }
+  .badge {
+    font-weight: 600;
+    font-size: 11.5px;
+    letter-spacing: 0.03em;
+    padding: 3px 10px;
+    border-radius: var(--r-pill);
+    white-space: nowrap;
+    border: 1px solid;
+  }
+  .badge.on { background: var(--mint); color: var(--mint-ink); border-color: var(--mint-line); }
+  .badge.off { background: var(--amber); color: var(--amber-ink); border-color: var(--amber-line); }
+
+  /* Popover Drawer for Custom Session Modes */
+  .drawer {
+    position: absolute;
+    left: var(--s6);
+    right: var(--s6);
+    top: calc(100% + 6px);
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: saturate(180%) blur(24px);
+    -webkit-backdrop-filter: saturate(180%) blur(24px);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-lg);
+    padding: var(--s6);
+    box-shadow: var(--shadow-lg);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--s8);
+    z-index: 40;
+  }
+  @media (max-width: 768px) {
+    .drawer { grid-template-columns: 1fr; gap: var(--s4); }
+  }
+  .swrow {
+    display: flex;
+    align-items: center;
+    gap: var(--s3);
+    padding: 6px 0;
+    cursor: pointer;
+    font-size: 13.5px;
+  }
+  .code {
+    background: var(--surface-secondary);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    padding: var(--s4);
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--ink);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    margin-top: var(--s2);
+  }
+
+  /* ===== Apple iOS / macOS Toggle Switch ===== */
+  input.sw {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 36px;
+    height: 20px;
+    border-radius: var(--r-pill);
+    background: rgba(120, 120, 128, 0.24);
+    border: none;
+    position: relative;
+    flex: none;
+    cursor: pointer;
+    outline: none;
+    transition: background-color 200ms var(--ease);
+  }
+  input.sw::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #FFFFFF;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+    transition: transform 200ms var(--ease);
+  }
+  input.sw:checked { background: var(--accent); }
+  input.sw:checked::after { transform: translateX(16px); }
+  input.sw:focus-visible { box-shadow: 0 0 0 3px var(--accent-ring); }
+
+  /* ===== Main Workspace Layout ===== */
+  .layout {
+    display: block;
+    padding-top: var(--s6);
+    padding-bottom: var(--s12);
+  }
+
+  /* Sidebar Navigation (macOS Settings style) */
+  .scn-col {
+    display: flex;
+    gap: var(--s4);
+    overflow-x: auto;
+    margin-bottom: var(--s6);
+    padding-bottom: var(--s2);
+  }
+  .grp {
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .grp-name {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--mute);
+    padding: var(--s1) var(--s3);
+    white-space: nowrap;
+  }
+  .scn {
+    display: flex;
+    gap: var(--s3);
+    align-items: center;
+    width: 100%;
+    text-align: left;
+    padding: 8px 12px;
+    border-radius: var(--r-sm);
+    white-space: nowrap;
+    background: transparent;
+    border: 1px solid transparent;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--ink-secondary);
+  }
+  .scn .n {
+    width: 22px;
+    height: 22px;
+    line-height: 22px;
+    font-size: 12px;
+    text-align: center;
+    border-radius: var(--r-xs);
+    background: rgba(0, 0, 0, 0.05);
+    color: var(--mute);
+    font-weight: 600;
+    flex: none;
+    transition: background-color 180ms var(--ease), color 180ms var(--ease);
+  }
+  .scn:hover:not(.on) {
+    background: rgba(0, 0, 0, 0.04);
+    color: var(--ink);
+  }
+  .scn.on {
+    background: var(--accent);
+    color: #FFFFFF;
+    font-weight: 500;
+    box-shadow: 0 1px 3px rgba(0, 113, 227, 0.25);
+  }
+  .scn.on .n {
+    background: rgba(255, 255, 255, 0.22);
+    color: #FFFFFF;
+  }
+
+  .stage {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s6);
+    min-width: 0;
+  }
+
+  @media (min-width: 1024px) {
+    .layout {
+      display: grid;
+      grid-template-columns: 260px minmax(0, 1fr);
+      gap: var(--s8);
+      align-items: start;
+    }
+    .scn-col {
+      flex-direction: column;
+      gap: var(--s5);
+      overflow: visible;
+      margin: 0;
+      padding: var(--s3);
+      background: rgba(255, 255, 255, 0.6);
+      border: 1px solid var(--line);
+      border-radius: var(--r-lg);
+      position: sticky;
+      top: calc(var(--bar-h) + var(--s4));
+      max-height: calc(100vh - var(--bar-h) - var(--s6));
+      overflow-y: auto;
+    }
+  }
+
+  /* ===== Cards & Forms ===== */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    padding: var(--s6);
+    box-shadow: var(--shadow-md);
+  }
+  .card-header {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--s4) var(--s6);
+    margin-top: var(--s5);
+  }
+  @media (max-width: 640px) {
+    .fields { grid-template-columns: 1fr; }
+  }
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    transition: opacity 180ms var(--ease);
+  }
+  .field.off { opacity: 0.45; }
+  .field-head {
+    display: flex;
+    align-items: center;
+    gap: var(--s2);
+  }
+  .field-head label {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12.5px;
+    color: var(--mute);
+    cursor: pointer;
+    user-select: none;
+  }
+  .inp {
+    width: 100%;
+    background: var(--surface-subtle);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-sm);
+    padding: 9px 12px;
+    font: 14px var(--font-mono);
+    color: var(--ink);
+    transition: border-color 180ms var(--ease), box-shadow 180ms var(--ease), background-color 180ms var(--ease);
+  }
+  .inp:focus {
+    outline: none;
+    background: var(--surface);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-ring);
+  }
+  .inp:disabled {
+    text-decoration: line-through;
+    background: var(--surface-secondary);
+    color: var(--mute);
+  }
+
+  /* Buttons */
+  .actions {
+    display: flex;
+    align-items: center;
+    gap: var(--s3);
+    margin-top: var(--s6);
+    padding-top: var(--s4);
+    border-top: 1px solid var(--line);
+    flex-wrap: wrap;
+  }
+  .btn-main {
+    background: var(--accent);
+    color: #FFFFFF;
+    border-color: transparent;
+    border-radius: var(--r-md);
+    font-size: 14px;
+    font-weight: 500;
+    padding: 9px 20px;
+    box-shadow: 0 1px 2px rgba(0, 113, 227, 0.2);
+  }
+  .btn-main:hover:not(:disabled) { background: var(--accent-hover); }
+  .btn-main:active:not(:disabled) { background: var(--accent-active); }
+
+  .btn-soft {
+    background: var(--surface);
+    color: var(--ink);
+    border-color: var(--line-strong);
+    border-radius: var(--r-md);
+    font-size: 14px;
+    font-weight: 500;
+    padding: 9px 18px;
+    box-shadow: var(--shadow-sm);
+  }
+  .btn-soft:hover:not(:disabled) { background: var(--surface-subtle); }
+
+  .btn-quiet {
+    padding: 6px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    background: var(--surface);
+    border-color: var(--line-strong);
+    border-radius: var(--r-sm);
+    color: var(--ink-secondary);
+    box-shadow: var(--shadow-sm);
+  }
+  .btn-quiet:hover:not(:disabled) { background: var(--surface-subtle); color: var(--ink); }
+
+  .btn-main kbd, .btn-soft kbd {
+    font-family: var(--font-sans);
+    font-size: 12px;
+    font-weight: 400;
+    opacity: 0.75;
+    margin-left: 4px;
+  }
+
+  /* ===== Results & Comparison Stage ===== */
+  .summary {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    padding: var(--s3) var(--s4);
+    box-shadow: var(--shadow-sm);
+  }
+  .res-grid {
+    display: grid;
+    gap: var(--s6);
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .res-grid.two {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  @media (max-width: 900px) {
+    .res-grid.two { grid-template-columns: 1fr; }
+  }
+  .res {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s4);
+  }
+  .res-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--s3);
+    padding-bottom: var(--s3);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .banner {
+    border: 1px solid;
+    border-radius: var(--r-md);
+    padding: var(--s3) var(--s4);
+    font-size: 14.5px;
+    font-weight: 500;
+    line-height: 1.45;
+  }
+  .banner.amber {
+    background: var(--amber);
+    color: var(--amber-ink);
+    border-color: var(--amber-line);
+  }
+  .banner.mint {
+    background: var(--mint);
+    color: var(--mint-ink);
+    border-color: var(--mint-line);
+  }
+  .errline {
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+    color: var(--err);
+    font: 500 12.5px var(--font-mono);
+    overflow-wrap: anywhere;
+  }
+
+  /* Clean Apple Data Tables */
+  .tbl-wrap {
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    overflow: hidden;
+    background: var(--surface);
+  }
+  .tbl {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+  }
+  .tbl th {
+    font-size: 11.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--mute);
+    padding: 9px 12px;
+    background: var(--surface-subtle);
+    border-bottom: 1px solid var(--line);
+  }
+  .tbl td {
+    padding: 9px 12px;
+    font: 13.5px var(--font-mono);
+    color: var(--ink);
+    border-top: 1px solid var(--line);
+  }
+  .tbl tbody tr:first-child td { border-top: none; }
+  .tbl tbody tr:hover td { background: rgba(0, 0, 0, 0.015); }
+  .tbl tr.chg td, .tbl tr.sus td, .tbl td.chg {
+    background: var(--amber) !important;
+  }
   .tbl .sent-chg { text-decoration: line-through; color: var(--mute); }
-  .tbl .stored-chg { font-weight: 800; color: var(--amber-ink); }
-  .tbl tr.fresh td { animation: flashRow .25s ease-out 1; }
-  .pipe { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s3); font-size: 15px; }
-  .pipe .step { display: inline-flex; align-items: center; gap: var(--s2); }
-  .pipe .dot { width: 10px; height: 10px; border-radius: 2px; }
-  .dot.mint { background: #10B981; } .dot.amber { background: #F59E0B; }
-  details { border: 1px solid var(--line); border-radius: var(--r); margin-top: var(--s2); background: #fff; }
-  details summary { cursor: pointer; font-size: 15px; font-weight: 700; color: var(--mute); list-style: none; padding: var(--s2) var(--s3); background: var(--soft); border-radius: var(--r); }
-  details summary:hover { background: var(--head); }
+  .tbl .stored-chg { font-weight: 600; color: var(--amber-ink); }
+
+  /* Pipeline Indicator */
+  .pipe {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 10px;
+    font-size: 13px;
+    padding: 8px 12px;
+    background: var(--surface-subtle);
+    border: 1px solid var(--line);
+    border-radius: var(--r-sm);
+  }
+  .pipe .step { display: inline-flex; align-items: center; gap: 6px; }
+  .pipe .dot { width: 7px; height: 7px; border-radius: 50%; }
+  .dot.mint { background: var(--mint-dot); }
+  .dot.amber { background: var(--amber-dot); }
+
+  /* 4-Layer Detailed Breakdown */
+  .layer-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s2);
+  }
+  .layer-item {
+    border: 1px solid var(--line);
+    border-radius: var(--r-sm);
+    padding: 10px 12px;
+    background: var(--surface-subtle);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .layer-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s2);
+    font-size: 13px;
+  }
+  .layer-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .layer-badge {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: var(--r-pill);
+  }
+  .layer-badge.mint { background: var(--mint); color: var(--mint-ink); border: 1px solid var(--mint-line); }
+  .layer-badge.amber { background: var(--amber); color: var(--amber-ink); border: 1px solid var(--amber-line); }
+  .layer-desc {
+    font-size: 13px;
+    color: var(--ink-secondary);
+    line-height: 1.45;
+  }
+  .layer-code {
+    margin: 2px 0 0;
+    padding: 6px 10px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-xs);
+    font: 12px/1.45 var(--font-mono);
+    color: var(--ink);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  .layer-code.err {
+    color: var(--err);
+    background: var(--err-bg);
+    border-color: var(--err-line);
+  }
+
+  /* Disclosure Details */
+  details {
+    border: 1px solid var(--line);
+    border-radius: var(--r-sm);
+    margin-top: 6px;
+    background: var(--surface-subtle);
+    overflow: hidden;
+  }
+  details summary {
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink-secondary);
+    list-style: none;
+    padding: 8px 12px;
+    user-select: none;
+    transition: background-color 150ms var(--ease);
+  }
+  details summary:hover { background: rgba(0, 0, 0, 0.03); color: var(--ink); }
   details summary::-webkit-details-marker { display: none; }
-  details summary::before { content: "▸ "; }
+  details summary::before { content: "▸ "; color: var(--mute); }
   details[open] summary::before { content: "▾ "; }
-  details .body { padding: var(--s3); }
-  .empty { padding: var(--s8) 0; text-align: center; font-size: 17px; color: var(--mute); border: 1px dashed var(--line-strong); border-radius: 6px; background: rgba(255,255,255,.5); }
-  .sk { background: var(--head); border-radius: var(--r); }
+  details[open] summary { border-bottom: 1px solid var(--line); background: var(--surface); }
+  details .body { padding: var(--s3); background: var(--surface); }
 
+  .empty {
+    padding: var(--s10) var(--s6);
+    text-align: center;
+    font-size: 14.5px;
+    color: var(--mute);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    background: var(--surface);
+    box-shadow: var(--shadow-sm);
+  }
+  .sk { background: var(--surface-secondary); border-radius: var(--r-sm); }
 
-  /* ===== Chút dễ thương: nút kiểu "sticker" đổ bóng cứng, thẻ nhấc nhẹ, mặt kaomoji ===== */
-  .card { box-shadow: 4px 4px 0 #D3DAE5; transition: transform .2s ease, box-shadow .2s ease; }
-  .res.card:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 #C3CCDA; }
-  .res.t-amber { border-top: 4px solid var(--amber-line); }
-  .res.t-mint { border-top: 4px solid var(--mint-line); }
-  .btn-main, .btn-soft, .btn-quiet, .adv { box-shadow: 2px 2px 0 var(--line-strong); transition: transform .15s ease, box-shadow .15s ease, background-color .2s ease; }
-  .btn-main { box-shadow: 3px 3px 0 var(--accent-dark); }
-  .btn-main:hover:not(:disabled), .btn-soft:hover:not(:disabled), .btn-quiet:hover, .adv:hover { transform: translate(-1px, -1px); }
-  .btn-main:active:not(:disabled), .btn-soft:active:not(:disabled), .btn-quiet:active, .adv:active { transform: translate(2px, 2px); box-shadow: 0 0 0 transparent; }
-  .scn .n { background: var(--head); border-radius: 3px; text-align: center; width: 24px; height: 24px; line-height: 24px; font-size: 14px; }
-  .scn.on .n { background: var(--accent); color: #fff; }
-  .scn:hover:not(.on) { transform: translateX(2px); }
-  .scn { transition: transform .15s ease, background-color .15s ease; }
-  .face { font-weight: 700; margin-right: var(--s3); white-space: nowrap; }
-  .banner .face { display: inline-block; font-size: 22px; }
-  .mascot { display: inline-block; animation: wiggle .25s ease-out 1; }
-  @keyframes wiggle { 0% { transform: rotate(-12deg) scale(.8); } 60% { transform: rotate(8deg) scale(1.1); } 100% { transform: none; } }
-
-  /* ===== Chuyển động (tối đa 3 loại, <= 250ms) ===== */
-  @keyframes slideIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
-  @keyframes flashRow { from { background-color: var(--amber-strong); } to { background-color: transparent; } }
-  .flash { animation: flashRow .25s ease-out 1; }
-  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition: none !important; }
+  }
 </style>
 </head>
 <body>
 @verbatim
 <div id="app" v-cloak>
 
-  <!-- ============ THANH MODE (sticky) ============ -->
-  <header class="modebar" ref="bar" :style="{ backgroundColor: barBg }">
+  <!-- ============ THANH MODE (sticky macOS Translucent Header) ============ -->
+  <header class="modebar" ref="bar">
     <div class="wrap">
-      <div class="row">
-        <h1 class="h1">🍓 Strict Mode Playground</h1>
-        <span class="cap mono">{{ dbLabel }}</span>
-        <button class="btn-quiet" style="margin-left:auto" @click="reset">Reset (R)</button>
+      <div class="topbar-head">
+        <div class="brand-group">
+          <h1 class="h1">Strict Mode Playground</h1>
+          <span class="db-pill mono">{{ dbLabel }}</span>
+        </div>
+        <button class="btn-quiet" @click="reset">Reset (R)</button>
       </div>
 
-      <div class="row">
+      <div class="toolbar-row">
         <span class="lbl">Laravel</span>
         <div class="seg-wrap">
           <button v-for="m in MODES" :key="m.id" class="seg" :class="{ on: mode === m.id }" @click="pickMode(m.id)">
@@ -184,27 +815,47 @@
           </button>
         </div>
         <button class="adv" :class="{ on: customOpen || mode === 'custom' }" @click="customOpen = !customOpen">Nâng cao ▾</button>
-        <span v-if="fatal" class="cap" style="color:var(--err)">{{ fatal }}</span>
+        <span v-if="fatal" class="cap" style="color:var(--err);font-weight:500">{{ fatal }}</span>
       </div>
 
-      <div class="row modeline" v-if="effective" :key="'g' + flash.g" :class="{ flash: flash.g > 0 }">
-        <span class="lbl">Global <i class="live" title="tự cập nhật mỗi 2 giây"></i></span>
-        <div class="grow"><span class="mono"><template v-for="(t, i) in tok(effective.global_mode)" :key="t"><span v-if="i">, </span><span :class="t.startsWith('STRICT_') ? 'tk-strict' : 'tk'">{{ t }}</span></template></span><span v-if="diffs.g" class="diff" :class="{ fade: diffs.g.fade }"><span v-for="a in diffs.g.added" :key="'a' + a" class="plus">+{{ a }}</span><span v-for="m in diffs.g.removed" :key="'r' + m" class="minus">−{{ m }}</span></span></div>
-      </div>
-      <div class="row modeline" v-if="effective" :key="'s' + flash.s" :class="{ flash: flash.s > 0 }">
-        <span class="lbl">Session</span>
-        <div class="grow"><span class="mono"><template v-for="(t, i) in tok(effective.session_mode)" :key="t"><span v-if="i">, </span><span :class="t.startsWith('STRICT_') ? 'tk-strict' : 'tk'">{{ t }}</span></template></span><span v-if="diffs.s" class="diff" :class="{ fade: diffs.s.fade }"><span v-for="a in diffs.s.added" :key="'a' + a" class="plus">+{{ a }}</span><span v-for="m in diffs.s.removed" :key="'r' + m" class="minus">−{{ m }}</span></span></div>
-        <span class="badge" :class="effective.is_strict ? 'on' : 'off'">{{ effective.is_strict ? 'STRICT ON' : 'STRICT OFF' }}</span>
-        <span class="mascot" :key="effective.is_strict">{{ effective.is_strict ? '🧐' : '😴' }}</span>
+      <div class="mode-stack" v-if="effective">
+        <div class="modeline">
+          <span class="lbl">Global <i class="live" title="tự cập nhật mỗi 2 giây"></i></span>
+          <div class="grow">
+            <span class="mono">
+              <template v-for="(t, i) in tok(effective.global_mode)" :key="t"><span v-if="i">, </span><span :class="t.startsWith('STRICT_') ? 'tk-strict' : 'tk'">{{ t }}</span></template>
+            </span>
+            <span v-if="diffs.g" class="diff" :class="{ fade: diffs.g.fade }">
+              <span v-for="a in diffs.g.added" :key="'a' + a" class="plus">+{{ a }}</span>
+              <span v-for="m in diffs.g.removed" :key="'r' + m" class="minus">−{{ m }}</span>
+            </span>
+          </div>
+        </div>
+        <div class="modeline">
+          <span class="lbl">Session</span>
+          <div class="grow">
+            <span class="mono">
+              <template v-for="(t, i) in tok(effective.session_mode)" :key="t"><span v-if="i">, </span><span :class="t.startsWith('STRICT_') ? 'tk-strict' : 'tk'">{{ t }}</span></template>
+            </span>
+            <span v-if="diffs.s" class="diff" :class="{ fade: diffs.s.fade }">
+              <span v-for="a in diffs.s.added" :key="'a' + a" class="plus">+{{ a }}</span>
+              <span v-for="m in diffs.s.removed" :key="'r' + m" class="minus">−{{ m }}</span>
+            </span>
+          </div>
+          <span class="badge" :class="effective.is_strict ? 'on' : 'off'">{{ effective.is_strict ? 'STRICT ON' : 'STRICT OFF' }}</span>
+        </div>
       </div>
 
       <div v-if="customOpen" class="drawer">
         <div>
-          <div class="cap">Mode tự chọn (áp lên SESSION)</div>
-          <label v-for="m in ALL_MODES" :key="m" class="swrow"><input type="checkbox" class="sw" :value="m" v-model="customModes" @change="pickCustom"><span class="mono">{{ m }}</span></label>
+          <div class="cap" style="font-weight:600;margin-bottom:var(--s2)">Mode tự chọn (áp lên SESSION)</div>
+          <label v-for="m in ALL_MODES" :key="m" class="swrow">
+            <input type="checkbox" class="sw" :value="m" v-model="customModes" @change="pickCustom">
+            <span class="mono">{{ m }}</span>
+          </label>
         </div>
         <div>
-          <div class="cap">Config đang áp dụng</div>
+          <div class="cap" style="font-weight:600;margin-bottom:var(--s2)">Config đang áp dụng</div>
           <pre class="code mono">{{ cfgText }}</pre>
         </div>
       </div>
@@ -212,7 +863,7 @@
   </header>
 
   <main class="wrap layout">
-    <!-- ============ DANH SÁCH KỊCH BẢN ============ -->
+    <!-- ============ DANH SÁCH KỊCH BẢN (Sidebar) ============ -->
     <nav class="scn-col">
       <div v-for="g in GROUPS" :key="g.name" class="grp">
         <div class="grp-name">{{ g.name }}</div>
@@ -225,20 +876,22 @@
     <!-- ============ SÂN KHẤU ============ -->
     <div class="stage">
       <section class="card">
-        <h2 class="h2">{{ sc.title }}</h2>
-        <div class="cap" style="font-size:17px">{{ sc.hint }}</div>
+        <div class="card-header">
+          <h2 class="h2">{{ sc.title }}</h2>
+          <div class="cap" style="font-size:14px">{{ sc.hint }}</div>
+        </div>
 
         <div v-if="Object.keys(form).length" class="fields">
           <div v-for="(f, k) in form" :key="k" class="field" :class="{ off: !f.send }">
             <div class="field-head">
-              <span class="mono" style="font-weight:700">{{ LABELS[k][0] }}</span>
+              <span class="mono" style="font-weight:600;color:var(--ink)">{{ LABELS[k][0] }}</span>
               <span class="cap mono">{{ LABELS[k][1] }}</span>
               <label>gửi <input type="checkbox" class="sw" v-model="f.send"></label>
             </div>
             <input class="inp" v-model="f.value" :disabled="!f.send">
           </div>
         </div>
-        <pre v-else class="code mono" style="font-size:16px;margin-top:var(--s6)">{{ sc.fixedSql }}</pre>
+        <pre v-else class="code mono" style="font-size:13.5px;margin-top:var(--s5)">{{ sc.fixedSql }}</pre>
 
         <div class="actions">
           <button class="btn-main" :disabled="busy" @click="run">Chạy <kbd>(Enter)</kbd></button>
@@ -248,46 +901,65 @@
       </section>
 
       <section>
-        <div v-if="!results.length && !busy" class="empty"><div class="face mono" style="font-size:28px">(•‿•)</div>Chọn kịch bản rồi bấm Chạy</div>
-        <div v-if="results.length === 2 && !busy" class="summary" style="margin-bottom:var(--s6)">{{ summary }}</div>
+        <div v-if="!results.length && !busy" class="empty">Chọn kịch bản rồi bấm Chạy để kiểm tra hành vi của cơ sở dữ liệu</div>
+        <div v-if="results.length === 2 && !busy" class="summary" style="margin-bottom:var(--s5)">{{ summary }}</div>
 
         <div v-if="results.length || busy" class="res-grid" :class="{ two: expected > 1 }">
-          <div v-for="r in results" :key="r.key" class="card res" :class="'t-' + verdict(r).tone">
-            <div>
+          <div v-for="r in results" :key="r.key" class="card res">
+            <div class="res-head">
               <div class="h2">{{ r.label }}</div>
               <div class="cap mono">{{ r.data.effective.is_strict ? 'STRICT ON' : 'STRICT OFF' }} · {{ r.data.elapsed_ms }} ms</div>
             </div>
 
             <div class="banner" :class="verdict(r).tone">
-              <span class="face mono">{{ face(r) }}</span>
               {{ verdict(r).text }}
               <div v-if="verdict(r).err" class="errline">{{ verdict(r).err }}</div>
             </div>
 
-            <div v-if="r.data.error" style="color:var(--mute)">Không ghi gì.</div>
-            <div v-else-if="r.data.rows" style="overflow-x:auto">
+            <div v-if="r.data.error" class="cap" style="font-size:13.5px">Không có bản ghi nào được lưu vào bảng.</div>
+            <div v-else-if="r.data.rows" class="tbl-wrap" style="overflow-x:auto">
               <table class="tbl">
                 <thead><tr><th v-for="c in cols(r.data.rows)" :key="c">{{ c }}</th></tr></thead>
-                <tbody><tr v-for="(row, i) in r.data.rows" :key="i"><td v-for="c in cols(r.data.rows)" :key="c" :class="{ chg: r.sc === 'myisam' && c === 'level' && Number(row[c]) === 127 }">{{ fmt(row[c]) }}</td></tr></tbody>
+                <tbody>
+                  <tr v-for="(row, i) in r.data.rows" :key="i">
+                    <td v-for="c in cols(r.data.rows)" :key="c" :class="{ chg: r.sc === 'myisam' && c === 'level' && Number(row[c]) === 127 }">{{ fmt(row[c]) }}</td>
+                  </tr>
+                </tbody>
               </table>
-              <div v-if="!r.data.rows.length" class="cap">(bảng trống)</div>
+              <div v-if="!r.data.rows.length" class="cap" style="padding:var(--s3)">(bảng trống)</div>
             </div>
-            <table v-else class="tbl">
-              <thead><tr><th>Cột</th><th>Gửi vào</th><th>Lưu thành</th></tr></thead>
-              <tbody>
-                <tr v-for="k in fieldKeys(r)" :key="k" :class="{ chg: changed(r, k) }">
-                  <td>{{ k }}</td>
-                  <td :class="{ 'sent-chg': changed(r, k) }">{{ fmt(r.data.sent[k], true) }}</td>
-                  <td :class="{ 'stored-chg': changed(r, k) }">{{ fmt(r.data.stored[k]) }}</td>
-                </tr>
-              </tbody>
-            </table>
+            <div v-else class="tbl-wrap">
+              <table class="tbl">
+                <thead><tr><th>Cột</th><th>Gửi vào</th><th>Lưu thành</th></tr></thead>
+                <tbody>
+                  <tr v-for="k in fieldKeys(r)" :key="k" :class="{ chg: changed(r, k) }">
+                    <td>{{ k }}</td>
+                    <td :class="{ 'sent-chg': changed(r, k) }">{{ fmt(r.data.sent[k], true) }}</td>
+                    <td :class="{ 'stored-chg': changed(r, k) }">{{ fmt(r.data.stored[k]) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
 
             <div class="pipe">
               <template v-for="(p, i) in pipe(r)" :key="i">
                 <span v-if="i" class="cap">→</span>
-                <span class="step"><i class="dot" :class="p.tone"></i><span class="cap">{{ PIPE_NAMES[i] }}</span><span>{{ p.text }}</span></span>
+                <span class="step"><i class="dot" :class="p.tone"></i><span class="cap">{{ PIPE_NAMES[i] }}:</span><span style="font-weight:500">{{ p.text }}</span></span>
               </template>
+            </div>
+
+            <div class="layer-list">
+              <div v-for="(l, i) in layers(r)" :key="i" class="layer-item">
+                <div class="layer-head">
+                  <span class="layer-title">
+                    <i class="dot" :class="l.tone" style="width:7px;height:7px;border-radius:50%;display:inline-block"></i>
+                    {{ i + 1 }}. {{ l.name }}
+                  </span>
+                  <span class="layer-badge" :class="l.tone">{{ l.badge }}</span>
+                </div>
+                <div class="layer-desc">{{ l.desc }}</div>
+                <pre v-if="l.detail" class="layer-code" :class="{ err: l.isErr }">{{ l.detail }}</pre>
+              </div>
             </div>
 
             <div>
@@ -298,9 +970,11 @@
               <details>
                 <summary>SHOW WARNINGS ({{ r.data.warnings.length }}) · Laravel không tự chạy bước này</summary>
                 <div class="body">
-                  <table v-if="r.data.warnings.length" class="tbl">
-                    <tr v-for="(w, i) in r.data.warnings" :key="i"><td>{{ w.level }}</td><td>{{ w.code }}</td><td style="font-family:inherit">{{ w.message }}</td></tr>
-                  </table>
+                  <div v-if="r.data.warnings.length" class="tbl-wrap">
+                    <table class="tbl">
+                      <tr v-for="(w, i) in r.data.warnings" :key="i"><td>{{ w.level }}</td><td>{{ w.code }}</td><td style="font-family:var(--font-sans)">{{ w.message }}</td></tr>
+                    </table>
+                  </div>
                   <div v-else class="cap">Không có warning.</div>
                 </div>
               </details>
@@ -308,42 +982,44 @@
           </div>
 
           <div v-for="n in pending" :key="'sk' + n" class="card res">
-            <div class="sk" style="height:28px;width:40%"></div>
-            <div class="sk" style="height:64px"></div>
-            <div class="sk" style="height:120px"></div>
+            <div class="sk" style="height:24px;width:40%"></div>
+            <div class="sk" style="height:56px"></div>
+            <div class="sk" style="height:110px"></div>
           </div>
         </div>
       </section>
 
       <section class="card">
-        <div class="row" style="align-items:baseline">
+        <div class="row" style="align-items:baseline;justify-content:space-between">
           <h2 class="h2">Bảng products</h2>
-          <span class="cap">{{ tables.products.length }} dòng, {{ suspiciousCount }} đáng ngờ</span>
+          <span class="cap">{{ tables.products.length }} dòng · {{ suspiciousCount }} đáng ngờ</span>
         </div>
-        <div style="overflow-x:auto;margin-top:var(--s3)">
+        <div class="tbl-wrap" style="overflow-x:auto;margin-top:var(--s4)">
           <table class="tbl">
-            <thead><tr><th v-for="c in PCOLS" :key="c">{{ c }}</th><th></th></tr></thead>
+            <thead><tr><th v-for="c in PCOLS" :key="c">{{ c }}</th><th>Ghi chú kiểm tra</th></tr></thead>
             <tbody>
-              <tr v-for="p in tables.products" :key="p.id" :class="{ sus: bugs(p).length, fresh: newIds.includes(p.id) }">
+              <tr v-for="p in tables.products" :key="p.id" :class="{ sus: bugs(p).length }">
                 <td v-for="c in PCOLS" :key="c">{{ fmt(p[c]) }}</td>
-                <td style="font-family:inherit;font-size:14px;color:var(--amber-ink);font-weight:700">{{ bugs(p).length ? 'đáng ngờ: ' + bugs(p).join(', ') : '' }}</td>
+                <td style="font-family:var(--font-sans);font-size:13px;color:var(--amber-ink);font-weight:500">{{ bugs(p).length ? 'Đáng ngờ: ' + bugs(p).join(', ') : '' }}</td>
               </tr>
             </tbody>
           </table>
-          <div v-if="!tables.products.length" class="cap" style="padding:var(--s3)">Bảng trống. Bấm Reset (R) để nạp dữ liệu mẫu.</div>
+          <div v-if="!tables.products.length" class="cap" style="padding:var(--s4)">Bảng trống. Bấm Reset (R) để nạp dữ liệu mẫu.</div>
         </div>
 
         <div v-if="sc.id === 'myisam'" style="margin-top:var(--s6)">
           <h2 class="h2">Bảng log_myisam</h2>
-          <table class="tbl" style="width:auto;margin-top:var(--s3)">
-            <thead><tr><th>id</th><th>level</th><th></th></tr></thead>
-            <tbody>
-              <tr v-for="l in tables.log_myisam" :key="l.id" :class="{ sus: Number(l.level) === 127 }">
-                <td>{{ l.id }}</td><td>{{ l.level }}</td>
-                <td style="font-family:inherit;font-size:14px;color:var(--amber-ink);font-weight:700">{{ Number(l.level) === 127 ? 'đáng ngờ: bị cắt về 127' : '' }}</td>
-              </tr>
-            </tbody>
-          </table>
+          <div class="tbl-wrap" style="margin-top:var(--s3);display:inline-block;min-width:280px">
+            <table class="tbl">
+              <thead><tr><th>id</th><th>level</th><th>Ghi chú</th></tr></thead>
+              <tbody>
+                <tr v-for="l in tables.log_myisam" :key="l.id" :class="{ sus: Number(l.level) === 127 }">
+                  <td>{{ l.id }}</td><td>{{ l.level }}</td>
+                  <td style="font-family:var(--font-sans);font-size:13px;color:var(--amber-ink);font-weight:500">{{ Number(l.level) === 127 ? 'Đáng ngờ: bị cắt về 127' : '' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
           <div v-if="!tables.log_myisam.length" class="cap" style="padding:var(--s3) 0">Bảng trống.</div>
         </div>
       </section>
@@ -538,10 +1214,6 @@ createApp({
       if (r.sc === 'zero_date') return { tone: 'amber', text: 'Ghi thành công, nhưng ngày 0000-00-00 không hợp lệ vẫn lọt vào bảng.' };
       return { tone: 'mint', text: 'Ghi thành công, dữ liệu khớp những gì đã gửi.' };
     },
-    face(r) {
-      const v = this.verdict(r);
-      return v.tone === 'amber' ? '(⊙_⊙;)' : v.err ? '(•̀ᴗ•́)و' : '(＾▽＾)';
-    },
     outcome(r) {
       const d = r.data;
       if (d.error) {
@@ -561,6 +1233,106 @@ createApp({
       if (d.error) return [`ERROR ${d.error.code}`, 'PDOException', 'QueryException', 'HTTP 500'].map((text) => ({ text, tone: 'mint' }));
       if (d.warnings.length) return [`Warning ${d.warnings[0].code}`, 'không báo gì', 'không báo gì', 'chạy tiếp với dữ liệu sai'].map((text) => ({ text, tone: 'amber' }));
       return ['OK', 'OK', 'OK', 'OK'].map((text) => ({ text, tone: 'mint' }));
+    },
+    layers(r) {
+      const d = r.data;
+      const e = d.error;
+      const w = d.warnings || [];
+      const dbName = this.dbLabel.split(' ')[0] || 'MariaDB';
+      const conn = d.effective ? d.effective.connection : 'mariadb';
+      if (e) {
+        const pdoMsg = e.pdo_message || `SQLSTATE[${e.sqlstate}]: General error: ${e.code} ${e.message}`;
+        const lrvMsg = e.laravel_message || `${pdoMsg} (Connection: ${conn}, SQL: ${d.sql})`;
+        return [
+          {
+            name: dbName,
+            badge: `ERROR ${e.code}`,
+            tone: 'mint',
+            isErr: true,
+            desc: r.sc === 'myisam' && d.rows && d.rows.length
+              ? 'Strict mode từ chối dòng lỗi, nhưng vì engine MyISAM không hỗ trợ transaction nên các dòng trước đó không được rollback.'
+              : 'Strict mode chặn câu lệnh ngay tại tầng database và hủy thao tác ghi.',
+            detail: `ERROR ${e.code} (${e.sqlstate}): ${e.message}`,
+          },
+          {
+            name: 'PDO (PHP Driver)',
+            badge: 'PDOException',
+            tone: 'mint',
+            isErr: true,
+            desc: 'Driver PDO (ATTR_ERRMODE = ERRMODE_EXCEPTION) nhận gói tin lỗi từ DB và ném ngoại lệ.',
+            detail: `PDOException: ${pdoMsg}`,
+          },
+          {
+            name: 'Laravel Framework',
+            badge: 'QueryException',
+            tone: 'mint',
+            isErr: true,
+            desc: 'Illuminate\\Database\\Connection bắt PDOException, bọc thêm tên connection và câu SQL rồi ném QueryException.',
+            detail: `Illuminate\\Database\\QueryException: ${lrvMsg}`,
+          },
+          {
+            name: 'Ứng dụng',
+            badge: 'HTTP 500',
+            tone: 'mint',
+            isErr: true,
+            desc: 'Exception Handler dừng luồng xử lý, trả HTTP 500 và ghi log lỗi — ngăn ứng dụng xử lý tiếp trên dữ liệu sai.',
+            detail: null,
+          },
+        ];
+      }
+      if (w.length) {
+        const wLines = w.map((x) => `${x.level} ${x.code}: ${x.message}`).join('\n');
+        const chg = this.changedKeys(r);
+        const storedSummary = chg.length
+          ? chg.map((k) => `${k}: ${quote(d.sent[k])} → ${quote(d.stored[k])}`).join(', ')
+          : `affected = ${d.affected}`;
+        return [
+          {
+            name: dbName,
+            badge: `Warning ${w[0].code}${w.length > 1 ? ` (+${w.length - 1})` : ''}`,
+            tone: 'amber',
+            isErr: false,
+            desc: 'Không có strict mode (hoặc dùng INSERT IGNORE): DB tự ép kiểu / cắt dữ liệu cho vừa cột, vẫn trả OK kèm warning trong bộ đệm.',
+            detail: wLines,
+          },
+          {
+            name: 'PDO (PHP Driver)',
+            badge: 'không báo gì',
+            tone: 'amber',
+            isErr: false,
+            desc: 'PDO chỉ ném exception khi DB trả mã ERROR. Với Warning, execute() vẫn trả về true như một câu lệnh hợp lệ hoàn toàn.',
+            detail: `PDOStatement::execute() => true (rowCount: ${d.affected})`,
+          },
+          {
+            name: 'Laravel Framework',
+            badge: 'không báo gì',
+            tone: 'amber',
+            isErr: false,
+            desc: 'Laravel không tự chạy SHOW WARNINGS sau câu lệnh, nên Eloquent / Query Builder coi như ghi thành công 100%.',
+            detail: `Không có exception · Dữ liệu đã lưu: ${storedSummary}`,
+          },
+          {
+            name: 'Ứng dụng',
+            badge: 'chạy tiếp với dữ liệu sai',
+            tone: 'amber',
+            isErr: false,
+            desc: 'Controller trả HTTP 200 OK. Sai lệch dữ liệu âm thầm đi vào hệ thống mà không có bất kỳ log lỗi hay cảnh báo nào.',
+            detail: null,
+          },
+        ];
+      }
+      const note = r.sc === 'group_by'
+        ? 'SQL_MODE không bật ONLY_FULL_GROUP_BY: DB tự chọn giá trị cột không nằm trong GROUP BY mà không báo lỗi hay warning.'
+        : r.sc === 'zero_date'
+          ? 'Chỉ có STRICT_TRANS_TABLES mà thiếu NO_ZERO_DATE: DB cho phép lưu ngày 0000-00-00 mà không sinh warning.'
+          : 'Dữ liệu hợp lệ, thực thi thành công không có lỗi hay cảnh báo.';
+      const tone = (r.sc === 'group_by' || r.sc === 'zero_date') ? 'amber' : 'mint';
+      return [
+        { name: dbName, badge: 'OK', tone, isErr: false, desc: note, detail: `0 errors, 0 warnings` },
+        { name: 'PDO (PHP Driver)', badge: 'OK', tone, isErr: false, desc: 'Thực thi câu lệnh thành công, không có ngoại lệ.', detail: `PDOStatement::execute() => true` },
+        { name: 'Laravel Framework', badge: 'OK', tone, isErr: false, desc: 'Nhận kết quả bình thường từ PDO.', detail: null },
+        { name: 'Ứng dụng', badge: 'OK', tone, isErr: false, desc: 'Hoàn tất request với HTTP 200 OK.', detail: null },
+      ];
     },
     cols(rows) { return rows.length ? Object.keys(rows[0]) : []; },
     fmt(v, sent) { return v === undefined ? (sent ? '(không gửi)' : '') : v === null ? 'NULL' : v === '' ? "''" : v; },

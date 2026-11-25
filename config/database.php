@@ -3,7 +3,7 @@
 // Các config khác (app, session, cache...) lấy mặc định của framework + biến trong .env
 $common = [
     'host' => env('DB_HOST', '127.0.0.1'),
-    'port' => env('DB_PORT', '3306'),
+    'port' => env('DB_PORT', '3308'),
     'database' => env('DB_DATABASE', 'strict_demo'),
     'username' => env('DB_USERNAME', 'root'),
     'password' => env('DB_PASSWORD', 'secret'),
