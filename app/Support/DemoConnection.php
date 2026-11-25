@@ -6,15 +6,29 @@ use Illuminate\Support\Facades\DB;
 
 class DemoConnection
 {
+    /** Các connection cho phép chọn từ UI */
+    public const ALLOWED_CONNECTIONS = ['mariadb', 'mysql'];
+
     /** Các mode cho phép chọn ở chế độ custom */
     public const ALLOWED_MODES = [
         'STRICT_TRANS_TABLES', 'STRICT_ALL_TABLES', 'NO_ZERO_IN_DATE',
         'NO_ZERO_DATE', 'ERROR_FOR_DIVISION_BY_ZERO', 'ONLY_FULL_GROUP_BY',
     ];
 
-    /** Đổi config connection theo mode rồi mở lại kết nối (chỉ ảnh hưởng request hiện tại) */
-    public static function apply(string $mode, array $modes = []): void
+    /** Các mode bổ sung thường có sẵn trong GLOBAL mặc định của MariaDB / MySQL */
+    public const ALLOWED_GLOBAL_MODES = [
+        'STRICT_TRANS_TABLES', 'STRICT_ALL_TABLES', 'NO_ZERO_IN_DATE',
+        'NO_ZERO_DATE', 'ERROR_FOR_DIVISION_BY_ZERO', 'ONLY_FULL_GROUP_BY',
+        'NO_AUTO_CREATE_USER', 'NO_ENGINE_SUBSTITUTION',
+    ];
+
+    /** Đổi connection + config mode rồi mở lại kết nối (chỉ ảnh hưởng request hiện tại) */
+    public static function apply(string $mode, array $modes = [], ?string $conn = null): void
     {
+        if ($conn !== null && in_array($conn, self::ALLOWED_CONNECTIONS, true)) {
+            config(['database.default' => $conn]);
+        }
+
         $name = config('database.default');
         $c = config("database.connections.$name");
         unset($c['modes']);

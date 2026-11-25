@@ -277,13 +277,13 @@
   .badge.on { background: var(--mint); color: var(--mint-ink); border-color: var(--mint-line); }
   .badge.off { background: var(--amber); color: var(--amber-ink); border-color: var(--amber-line); }
 
-  /* Popover Drawer for Custom Session Modes */
+  /* Popover Drawer for Custom Session Modes & Global Modes */
   .drawer {
     position: absolute;
     left: var(--s6);
     right: var(--s6);
     top: calc(100% + 6px);
-    background: rgba(255, 255, 255, 0.95);
+    background: rgba(255, 255, 255, 0.96);
     backdrop-filter: saturate(180%) blur(24px);
     -webkit-backdrop-filter: saturate(180%) blur(24px);
     border: 1px solid var(--line-strong);
@@ -302,7 +302,7 @@
     display: flex;
     align-items: center;
     gap: var(--s3);
-    padding: 6px 0;
+    padding: 5px 0;
     cursor: pointer;
     font-size: 13.5px;
   }
@@ -317,6 +317,79 @@
     white-space: pre-wrap;
     overflow-wrap: anywhere;
     margin-top: var(--s2);
+  }
+
+  /* Session Tabs Bar (macOS Safari / Terminal Tabs style) */
+  .sess-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    padding-top: 2px;
+  }
+  .sess-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 12px;
+    border-radius: var(--r-sm);
+    background: rgba(118, 118, 128, 0.1);
+    border: 1px solid transparent;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink-secondary);
+  }
+  .sess-tab:hover:not(.on) {
+    background: rgba(118, 118, 128, 0.16);
+    color: var(--ink);
+  }
+  .sess-tab.on {
+    background: var(--surface);
+    border-color: var(--accent);
+    color: var(--ink);
+    font-weight: 600;
+    box-shadow: 0 1px 3px rgba(0, 113, 227, 0.15);
+  }
+  .sess-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex: none;
+  }
+  .sess-dot.on { background: var(--mint-dot); }
+  .sess-dot.off { background: var(--amber-dot); }
+  .sess-x {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    font-size: 12px;
+    line-height: 1;
+    color: var(--mute);
+    margin-left: 2px;
+  }
+  .sess-x:hover {
+    background: rgba(0, 0, 0, 0.1);
+    color: var(--ink);
+  }
+  .btn-new-sess {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 12px;
+    border-radius: var(--r-sm);
+    background: var(--surface);
+    border: 1px dashed var(--line-strong);
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--accent);
+  }
+  .btn-new-sess:hover {
+    background: var(--accent-bg);
+    border-style: solid;
+    border-color: var(--accent);
   }
 
   /* ===== Apple iOS / macOS Toggle Switch ===== */
@@ -802,19 +875,50 @@
       <div class="topbar-head">
         <div class="brand-group">
           <h1 class="h1">Strict Mode Playground</h1>
-          <span class="db-pill mono">{{ dbLabel }}</span>
+          <div class="seg-wrap">
+            <button v-for="d in DBS" :key="d.id" class="seg" :class="{ on: conn === d.id }" @click="pickConn(d.id)">
+              <span>{{ d.title }}</span>
+              <small v-if="conn === d.id && effective" class="mono">{{ effective.version.split('-')[0] }}</small>
+            </button>
+          </div>
         </div>
-        <button class="btn-quiet" @click="reset">Reset (R)</button>
+        <div class="row" style="gap:var(--s2)">
+          <button class="adv" :class="{ on: globalOpen }" @click="toggleGlobalDrawer">Tùy chỉnh GLOBAL sql_mode ▾</button>
+          <button class="btn-quiet" @click="reset">Reset (R)</button>
+        </div>
+      </div>
+
+      <!-- Thanh quản lý nhiều Tab Session độc lập -->
+      <div class="sess-bar">
+        <span class="lbl">Các Session</span>
+        <button
+          v-for="s in sessions"
+          :key="s.id"
+          class="sess-tab"
+          :class="{ on: activeSessionId === s.id }"
+          @click="switchSession(s.id)"
+        >
+          <i class="sess-dot" :class="isModesStrict(s.modes) ? 'on' : 'off'"></i>
+          <span>{{ s.name }}</span>
+          <small class="mono" style="font-size:11px;color:var(--mute)">({{ sessionShortDesc(s) }})</small>
+          <span v-if="sessions.length > 1" class="sess-x" title="Đóng session này" @click.stop="removeSession(s.id)">×</span>
+        </button>
+        <button class="btn-new-sess" @click="createNewSessionFromGlobal" title="Tạo một kết nối (Session) mới kế thừa từ GLOBAL sql_mode hiện tại của Server">
+          + Tạo Session mới (kế thừa GLOBAL hiện tại)
+        </button>
       </div>
 
       <div class="toolbar-row">
-        <span class="lbl">Laravel</span>
+        <span class="lbl">Session #{{ activeSessionId }}</span>
         <div class="seg-wrap">
           <button v-for="m in MODES" :key="m.id" class="seg" :class="{ on: mode === m.id }" @click="pickMode(m.id)">
             <span>{{ m.title }}</span><small class="mono">{{ m.sub }}</small>
           </button>
         </div>
-        <button class="adv" :class="{ on: customOpen || mode === 'custom' }" @click="customOpen = !customOpen">Nâng cao ▾</button>
+        <button class="adv" :class="{ on: customOpen || mode === 'custom' }" @click="customOpen = !customOpen; if (customOpen) globalOpen = false">Tùy chỉnh SESSION #{{ activeSessionId }} ▾</button>
+        <span v-if="activeSession && activeSession.snapAt" class="cap">
+          Đã mở lúc {{ activeSession.snapAt }} (chốt từ GLOBAL lúc mở)
+        </span>
         <span v-if="fatal" class="cap" style="color:var(--err);font-weight:500">{{ fatal }}</span>
       </div>
 
@@ -823,19 +927,26 @@
           <span class="lbl">Global <i class="live" title="tự cập nhật mỗi 2 giây"></i></span>
           <div class="grow">
             <span class="mono">
-              <template v-for="(t, i) in tok(effective.global_mode)" :key="t"><span v-if="i">, </span><span :class="t.startsWith('STRICT_') ? 'tk-strict' : 'tk'">{{ t }}</span></template>
+              <template v-if="tok(effective.global_mode).length">
+                <template v-for="(t, i) in tok(effective.global_mode)" :key="t"><span v-if="i">, </span><span :class="t.startsWith('STRICT_') ? 'tk-strict' : 'tk'">{{ t }}</span></template>
+              </template>
+              <span v-else class="cap mono">(rỗng '')</span>
             </span>
             <span v-if="diffs.g" class="diff" :class="{ fade: diffs.g.fade }">
               <span v-for="a in diffs.g.added" :key="'a' + a" class="plus">+{{ a }}</span>
               <span v-for="m in diffs.g.removed" :key="'r' + m" class="minus">−{{ m }}</span>
             </span>
           </div>
+          <button class="btn-quiet" style="padding:2px 8px;font-size:11.5px" @click="toggleGlobalDrawer">Sửa GLOBAL</button>
         </div>
         <div class="modeline">
-          <span class="lbl">Session</span>
+          <span class="lbl">Session #{{ activeSessionId }}</span>
           <div class="grow">
             <span class="mono">
-              <template v-for="(t, i) in tok(effective.session_mode)" :key="t"><span v-if="i">, </span><span :class="t.startsWith('STRICT_') ? 'tk-strict' : 'tk'">{{ t }}</span></template>
+              <template v-if="tok(effective.session_mode).length">
+                <template v-for="(t, i) in tok(effective.session_mode)" :key="t"><span v-if="i">, </span><span :class="t.startsWith('STRICT_') ? 'tk-strict' : 'tk'">{{ t }}</span></template>
+              </template>
+              <span v-else class="cap mono">(rỗng '')</span>
             </span>
             <span v-if="diffs.s" class="diff" :class="{ fade: diffs.s.fade }">
               <span v-for="a in diffs.s.added" :key="'a' + a" class="plus">+{{ a }}</span>
@@ -846,17 +957,59 @@
         </div>
       </div>
 
+      <!-- Drawer 1: Tùy chỉnh SESSION hiện tại -->
       <div v-if="customOpen" class="drawer">
         <div>
-          <div class="cap" style="font-weight:600;margin-bottom:var(--s2)">Mode tự chọn (áp lên SESSION)</div>
+          <div class="cap" style="font-weight:600;margin-bottom:var(--s2)">Bật/tắt từng cờ cho riêng Session #{{ activeSessionId }} (SET SESSION sql_mode)</div>
           <label v-for="m in ALL_MODES" :key="m" class="swrow">
             <input type="checkbox" class="sw" :value="m" v-model="customModes" @change="pickCustom">
             <span class="mono">{{ m }}</span>
+            <small class="cap" style="margin-left:auto">{{ MODE_DESC[m] }}</small>
           </label>
         </div>
         <div>
-          <div class="cap" style="font-weight:600;margin-bottom:var(--s2)">Config đang áp dụng</div>
+          <div class="cap" style="font-weight:600;margin-bottom:var(--s2)">Config Laravel tương ứng của Session #{{ activeSessionId }}</div>
           <pre class="code mono">{{ cfgText }}</pre>
+          <div class="row" style="margin-top:var(--s3);gap:var(--s2)">
+            <button class="btn-soft" style="padding:6px 12px;font-size:12.5px" @click="syncSessionFromCurrentGlobal">Lấy lại theo GLOBAL hiện tại</button>
+            <button class="btn-quiet" style="margin-left:auto" @click="customOpen = false">Đóng</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Drawer 2: Tùy chỉnh GLOBAL sql_mode theo ý muốn -->
+      <div v-if="globalOpen" class="drawer">
+        <div>
+          <div class="cap" style="font-weight:600;margin-bottom:var(--s2)">Tùy chỉnh các cờ GLOBAL sql_mode trên {{ dbLabel }}</div>
+          <label v-for="m in GLOBAL_MODES" :key="m" class="swrow">
+            <input type="checkbox" class="sw" :value="m" v-model="globalDraft">
+            <span class="mono">{{ m }}</span>
+            <small class="cap" style="margin-left:auto">{{ MODE_DESC[m] }}</small>
+          </label>
+          <div class="row" style="margin-top:var(--s3);gap:var(--s2)">
+            <span class="cap" style="font-weight:600">Chọn nhanh:</span>
+            <button class="btn-quiet" style="padding:4px 10px;font-size:12px" @click="setGlobalDraftPreset('strict')">Mặc định Server</button>
+            <button class="btn-quiet" style="padding:4px 10px;font-size:12px" @click="setGlobalDraftPreset('loose')">Chỉ NO_ENGINE_SUBSTITUTION</button>
+            <button class="btn-quiet" style="padding:4px 10px;font-size:12px" @click="setGlobalDraftPreset('empty')">Bỏ chọn hết ('')</button>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;justify-content:space-between">
+          <div>
+            <div class="cap" style="font-weight:600;margin-bottom:var(--s2)">Câu lệnh SQL sẽ chạy trên Server</div>
+            <pre class="code mono">SET GLOBAL sql_mode = '{{ globalDraft.join(',') }}';</pre>
+            <div class="cap" style="margin-top:var(--s3);line-height:1.5">
+              <b>Lưu ý quan trọng:</b> Khi bạn bấm <b>Áp dụng SET GLOBAL</b>, các tab <b>Session đang mở sẵn</b> (ví dụ Session #{{ activeSessionId }}) sẽ <b>KHÔNG bị thay đổi</b>. Hãy bấm nút <b>"+ Tạo Session mới (kế thừa GLOBAL hiện tại)"</b> trên thanh tab để mở một kết nối mới nhận GLOBAL mới này rồi so sánh trực tiếp!
+            </div>
+          </div>
+          <div class="row" style="margin-top:var(--s4);gap:var(--s2)">
+            <button class="btn-main" :disabled="globalBusy" @click="saveCustomGlobal(false)">
+              Áp dụng SET GLOBAL
+            </button>
+            <button class="btn-soft" :disabled="globalBusy" @click="saveCustomGlobal(true)">
+              Áp dụng &amp; Mở luôn 1 Tab Session mới
+            </button>
+            <button class="btn-quiet" style="margin-left:auto" @click="globalOpen = false">Đóng</button>
+          </div>
         </div>
       </div>
     </div>
@@ -894,8 +1047,9 @@
         <pre v-else class="code mono" style="font-size:13.5px;margin-top:var(--s5)">{{ sc.fixedSql }}</pre>
 
         <div class="actions">
-          <button class="btn-main" :disabled="busy" @click="run">Chạy <kbd>(Enter)</kbd></button>
+          <button class="btn-main" :disabled="busy" @click="run">Chạy trên Session #{{ activeSessionId }} <kbd>(Enter)</kbd></button>
           <button class="btn-soft" :disabled="busy" @click="compare">So sánh 2 chế độ <kbd>(C)</kbd></button>
+          <button v-if="sessions.length > 1" class="btn-soft" :disabled="busy" @click="compareSessions">So sánh tất cả các Tab Session ({{ sessions.length }})</button>
           <span class="cap">{{ sc.compare[0].label }} và {{ sc.compare[1].label }}</span>
         </div>
       </section>
@@ -944,7 +1098,7 @@
             <div class="pipe">
               <template v-for="(p, i) in pipe(r)" :key="i">
                 <span v-if="i" class="cap">→</span>
-                <span class="step"><i class="dot" :class="p.tone"></i><span class="cap">{{ PIPE_NAMES[i] }}:</span><span style="font-weight:500">{{ p.text }}</span></span>
+                <span class="step"><i class="dot" :class="p.tone"></i><span class="cap">{{ i === 0 ? dbLabel.split(' ')[0] : PIPE_NAMES[i] }}:</span><span style="font-weight:500">{{ p.text }}</span></span>
               </template>
             </div>
 
@@ -1030,6 +1184,21 @@
 <script>
 const { createApp } = Vue;
 const ALL_MODES = ['STRICT_TRANS_TABLES', 'STRICT_ALL_TABLES', 'NO_ZERO_IN_DATE', 'NO_ZERO_DATE', 'ERROR_FOR_DIVISION_BY_ZERO', 'ONLY_FULL_GROUP_BY'];
+const GLOBAL_MODES = ['STRICT_TRANS_TABLES', 'STRICT_ALL_TABLES', 'NO_ZERO_IN_DATE', 'NO_ZERO_DATE', 'ERROR_FOR_DIVISION_BY_ZERO', 'ONLY_FULL_GROUP_BY', 'NO_ENGINE_SUBSTITUTION', 'NO_AUTO_CREATE_USER'];
+const MODE_DESC = {
+  STRICT_TRANS_TABLES: 'Chặn dữ liệu sai trên bảng có transaction (InnoDB)',
+  STRICT_ALL_TABLES: 'Chặn dữ liệu sai trên mọi bảng (cả MyISAM)',
+  NO_ZERO_IN_DATE: 'Cấm ngày có tháng/ngày bằng 0 (kết hợp strict)',
+  NO_ZERO_DATE: 'Cấm ngày 0000-00-00 (kết hợp strict)',
+  ERROR_FOR_DIVISION_BY_ZERO: 'Cấm chia cho 0 (kết hợp strict)',
+  ONLY_FULL_GROUP_BY: 'Cấm SELECT cột không rõ ràng khi GROUP BY',
+  NO_ENGINE_SUBSTITUTION: 'Cấm tự đổi sang engine mặc định nếu engine yêu cầu không có',
+  NO_AUTO_CREATE_USER: 'Cấm GRANT tự tạo user không mật khẩu (MariaDB)',
+};
+const DBS = [
+  { id: 'mariadb', title: 'MariaDB' },
+  { id: 'mysql', title: 'MySQL' },
+];
 const MODES = [
   { id: 'loose', title: 'Dễ tính', sub: "'strict' => false" },
   { id: 'strict', title: 'Khó tính', sub: "'strict' => true" },
@@ -1072,8 +1241,23 @@ const quote = (v) => (v === null ? 'NULL' : `'${v}'`);
 createApp({
   data() {
     return {
-      MODES, ALL_MODES, GROUPS, LABELS, PCOLS, PIPE_NAMES,
-      mode: 'strict', lastStd: 'strict', autoCustom: false, customModes: ['STRICT_TRANS_TABLES'], customOpen: false,
+      DBS, MODES, ALL_MODES, GLOBAL_MODES, MODE_DESC, GROUPS, LABELS, PCOLS, PIPE_NAMES,
+      conn: 'mariadb',
+      sessions: [
+        {
+          id: 1,
+          name: 'Session #1',
+          mode: 'strict',
+          modes: [...ALL_MODES],
+          snapAt: '',
+          results: [],
+          expected: 1,
+        },
+      ],
+      activeSessionId: 1,
+      nextSessionId: 2,
+      mode: 'strict', lastStd: 'strict', autoCustom: false, customModes: [...ALL_MODES], customOpen: false,
+      globalOpen: false, globalBusy: false, globalDraft: ['STRICT_TRANS_TABLES', 'ERROR_FOR_DIVISION_BY_ZERO', 'NO_AUTO_CREATE_USER', 'NO_ENGINE_SUBSTITUTION'],
       effective: null, statusReq: 0,
       diffs: { g: null, s: null }, flash: { g: 0, s: 0 },
       sc: SC[0], form: {}, results: [], expected: 1, busy: false, k: 0, fatal: '',
@@ -1081,11 +1265,18 @@ createApp({
     };
   },
   computed: {
+    activeSession() {
+      return this.sessions.find((s) => s.id === this.activeSessionId) || this.sessions[0];
+    },
     barBg() { return this.effective ? (this.effective.is_strict ? '#E4F7EE' : '#FEF4DF') : '#FFFFFF'; },
     dbLabel() {
       const v = this.effective ? this.effective.version : '';
-      if (!v) return '...';
+      if (!v) return this.conn === 'mysql' ? 'MySQL' : 'MariaDB';
       return (/mariadb/i.test(v) ? 'MariaDB ' : 'MySQL ') + v.split('-')[0];
+    },
+    currentModeTitle() {
+      const m = MODES.find((x) => x.id === this.mode);
+      return m ? m.title : 'Tùy chỉnh';
     },
     pending() { return this.busy ? Math.max(0, this.expected - this.results.length) : 0; },
     suspiciousCount() { return this.tables.products.filter((p) => this.bugs(p).length).length; },
@@ -1095,8 +1286,8 @@ createApp({
       return `// config/database.php\n'${c}' => [\n    'driver' => '${c}',\n    ...\n    ${this.effective.config_snippet}\n],`;
     },
     summary() {
-      const [a, b] = this.results;
-      return `${a.label} ${this.outcome(a)}. ${b.label} ${this.outcome(b)}.`;
+      if (this.results.length < 2) return '';
+      return this.results.map((r) => `${r.label} ${this.outcome(r)}`).join('. ') + '.';
     },
   },
   methods: {
@@ -1108,9 +1299,159 @@ createApp({
       } catch (e) { this.fatal = 'Không gọi được API'; throw e; }
     },
     modeQuery() {
-      const q = new URLSearchParams({ mode: this.mode });
+      // Nếu tab session hiện tại đã "chốt" danh sách modes lúc mở (mode === 'custom'), gửi modes[] của nó
+      const q = new URLSearchParams({ conn: this.conn, mode: this.mode });
       this.customModes.forEach((m) => q.append('modes[]', m));
       return q.toString();
+    },
+    isModesStrict(modes) {
+      return (modes || []).includes('STRICT_TRANS_TABLES') || (modes || []).includes('STRICT_ALL_TABLES');
+    },
+    sessionShortDesc(s) {
+      if (s.mode === 'loose') return 'Dễ tính';
+      if (s.mode === 'strict') return 'Khó tính';
+      if (s.mode === 'server') return 'Theo GLOBAL';
+      return this.isModesStrict(s.modes) ? 'STRICT ON' : 'STRICT OFF';
+    },
+    nowTime() {
+      const d = new Date();
+      return d.toTimeString().slice(0, 8);
+    },
+    saveActiveSessionState() {
+      const s = this.activeSession;
+      if (!s) return;
+      s.mode = this.mode;
+      s.modes = [...this.customModes];
+      s.results = [...this.results];
+      s.expected = this.expected;
+    },
+    switchSession(id) {
+      this.saveActiveSessionState();
+      const target = this.sessions.find((s) => s.id === id);
+      if (!target) return;
+      this.activeSessionId = target.id;
+      this.mode = target.mode;
+      this.customModes = [...target.modes];
+      this.results = [...(target.results || [])];
+      this.expected = target.expected || 1;
+      this.refreshStatus();
+    },
+    createNewSessionFromGlobal() {
+      // Chốt (snapshot) trạng thái của các session cũ đang ở chế độ 'server' để chúng không bị đổi theo GLOBAL sau này
+      this.saveActiveSessionState();
+      const gTokens = this.effective ? this.tok(this.effective.global_mode) : [];
+      const inheritedModes = gTokens.filter((m) => ALL_MODES.includes(m));
+      const id = this.nextSessionId++;
+      const newSess = {
+        id,
+        name: `Session #${id}`,
+        mode: 'custom',
+        modes: inheritedModes,
+        snapAt: this.nowTime(),
+        results: [],
+        expected: 1,
+      };
+      this.sessions.push(newSess);
+      this.activeSessionId = id;
+      this.mode = newSess.mode;
+      this.customModes = [...newSess.modes];
+      this.results = [];
+      this.expected = 1;
+      this.refreshStatus();
+    },
+    removeSession(id) {
+      if (this.sessions.length <= 1) return;
+      const idx = this.sessions.findIndex((s) => s.id === id);
+      if (idx === -1) return;
+      this.sessions.splice(idx, 1);
+      if (this.activeSessionId === id) {
+        const next = this.sessions[Math.max(0, idx - 1)];
+        this.activeSessionId = next.id;
+        this.mode = next.mode;
+        this.customModes = [...next.modes];
+        this.results = [...(next.results || [])];
+        this.expected = next.expected || 1;
+        this.refreshStatus();
+      }
+    },
+    syncSessionFromCurrentGlobal() {
+      const gTokens = this.effective ? this.tok(this.effective.global_mode) : [];
+      this.customModes = gTokens.filter((m) => ALL_MODES.includes(m));
+      this.mode = 'custom';
+      if (this.activeSession) this.activeSession.snapAt = this.nowTime();
+      this.saveActiveSessionState();
+      this.refreshStatus();
+    },
+    toggleGlobalDrawer() {
+      this.globalOpen = !this.globalOpen;
+      if (this.globalOpen) {
+        this.customOpen = false;
+        if (this.effective) {
+          this.globalDraft = this.tok(this.effective.global_mode).filter((m) => GLOBAL_MODES.includes(m));
+        }
+      }
+    },
+    setGlobalDraftPreset(preset) {
+      if (preset === 'loose') {
+        this.globalDraft = ['NO_ENGINE_SUBSTITUTION'];
+      } else if (preset === 'empty') {
+        this.globalDraft = [];
+      } else {
+        this.globalDraft = this.conn === 'mariadb'
+          ? ['STRICT_TRANS_TABLES', 'ERROR_FOR_DIVISION_BY_ZERO', 'NO_AUTO_CREATE_USER', 'NO_ENGINE_SUBSTITUTION']
+          : ['ONLY_FULL_GROUP_BY', 'STRICT_TRANS_TABLES', 'NO_ZERO_IN_DATE', 'NO_ZERO_DATE', 'ERROR_FOR_DIVISION_BY_ZERO', 'NO_ENGINE_SUBSTITUTION'];
+      }
+    },
+    async saveCustomGlobal(andOpenNewSession = false) {
+      this.globalBusy = true;
+      try {
+        // Trước khi đổi GLOBAL trên server: chốt (snapshot) các session đang mở sẵn nếu đang ở 'server'
+        // để đúng với thực tế MySQL/MariaDB: session đã mở từ trước giữ nguyên @@SESSION.sql_mode cũ!
+        const oldGlobalModes = this.effective
+          ? this.tok(this.effective.global_mode).filter((m) => ALL_MODES.includes(m))
+          : [];
+        this.sessions.forEach((s) => {
+          if (s.mode === 'server') {
+            s.mode = 'custom';
+            s.modes = [...oldGlobalModes];
+            if (!s.snapAt) s.snapAt = this.nowTime();
+          }
+        });
+        if (this.mode === 'server') {
+          this.mode = 'custom';
+          this.customModes = [...oldGlobalModes];
+        }
+
+        const res = await this.api('global', {
+          method: 'POST',
+          body: JSON.stringify({
+            conn: this.conn,
+            mode: this.mode,
+            modes: this.customModes,
+            preset: 'custom',
+            global_modes: this.globalDraft,
+          }),
+        });
+        if (this.effective && res.effective) {
+          this.applyDiff('g', this.effective.global_mode, res.effective.global_mode);
+          this.applyDiff('s', this.effective.session_mode, res.effective.session_mode);
+        }
+        if (res.effective) this.effective = res.effective;
+        if (andOpenNewSession) {
+          this.createNewSessionFromGlobal();
+          this.globalOpen = false;
+        }
+      } finally {
+        this.globalBusy = false;
+      }
+    },
+    async pickConn(c) {
+      if (this.conn === c) return;
+      this.conn = c;
+      this.results = [];
+      this.effective = null;
+      await this.refreshStatus();
+      await this.loadProducts(false);
     },
     // ---------- Trạng thái mode + chênh lệch ----------
     tok(s) { return s ? s.split(',') : []; },
@@ -1140,19 +1481,26 @@ createApp({
     setMode(m) {
       if (m !== 'custom') this.lastStd = m;
       this.mode = m;
+      if (m === 'loose') this.customModes = [];
+      else if (m === 'strict') this.customModes = [...ALL_MODES];
+      else if (m === 'server' && this.effective) {
+        this.customModes = this.tok(this.effective.global_mode).filter((x) => ALL_MODES.includes(x));
+      }
+      this.saveActiveSessionState();
       this.refreshStatus();
     },
     pickMode(m) { this.autoCustom = false; this.setMode(m); },
     pickCustom() { this.autoCustom = false; this.setMode('custom'); },
     // ---------- Dữ liệu ----------
     async loadProducts(highlight = true) {
-      const t = await this.api('products');
+      const t = await this.api('products?' + this.modeQuery());
+      if (!t || !t.products) return;
       const old = new Set(this.tables.products.map((p) => p.id));
       this.newIds = highlight && this.loaded ? t.products.filter((p) => !old.has(p.id)).map((p) => p.id) : [];
       this.tables = t; this.loaded = true;
     },
     async reset() {
-      this.tables = await this.api('reset', { method: 'POST' });
+      this.tables = await this.api('reset', { method: 'POST', body: JSON.stringify({ conn: this.conn, mode: this.mode, modes: this.customModes }) });
       this.newIds = []; this.results = [];
     },
     // ---------- Kịch bản ----------
@@ -1174,7 +1522,7 @@ createApp({
       return p;
     },
     async exec(cfg) {
-      const data = await this.api('run', { method: 'POST', body: JSON.stringify({ scenario: this.sc.id, mode: cfg.mode, modes: cfg.modes || [], payload: this.payload() }) });
+      const data = await this.api('run', { method: 'POST', body: JSON.stringify({ conn: this.conn, scenario: this.sc.id, mode: cfg.mode, modes: cfg.modes || [], payload: this.payload() }) });
       this.results.push({ key: ++this.k, label: cfg.label, sc: this.sc.id, data });
       await this.loadProducts();
     },
@@ -1182,13 +1530,24 @@ createApp({
       if (this.busy) return;
       this.busy = true; this.results = []; this.expected = list.length;
       try { for (const cfg of list) await this.exec(cfg); } catch (e) { /* fatal đã hiển thị */ }
+      this.saveActiveSessionState();
       this.busy = false;
     },
     run() {
       const m = MODES.find((x) => x.id === this.mode);
-      return this.go([{ label: m ? m.title : this.customModes.join(' + ') || '(không mode)', mode: this.mode, modes: this.customModes }]);
+      const title = m ? m.title : (this.customModes.join(' + ') || '(rỗng)');
+      return this.go([{ label: `Session #${this.activeSessionId} (${title})`, mode: this.mode, modes: this.customModes }]);
     },
     compare() { return this.go(this.sc.compare); },
+    compareSessions() {
+      this.saveActiveSessionState();
+      const list = this.sessions.map((s) => ({
+        label: `${s.name} (${this.sessionShortDesc(s)})`,
+        mode: s.mode,
+        modes: s.modes,
+      }));
+      return this.go(list);
+    },
     // ---------- Diễn giải kết quả ----------
     changed(r, k) {
       const s = r.data.stored;

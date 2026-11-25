@@ -14,10 +14,14 @@ use Throwable;
 
 class PlaygroundController extends Controller
 {
-    /** Áp mode từ request (mode + modes[]) lên connection */
+    /** Áp connection + mode từ request (conn + mode + modes[]) lên connection */
     private function applyMode(Request $r): void
     {
-        DemoConnection::apply((string) $r->input('mode', 'strict'), (array) $r->input('modes', []));
+        DemoConnection::apply(
+            (string) $r->input('mode', 'strict'),
+            (array) $r->input('modes', []),
+            $r->input('conn') ? (string) $r->input('conn') : null
+        );
     }
 
     private function tables(): array
@@ -30,18 +34,69 @@ class PlaygroundController extends Controller
 
     public function status(Request $r): JsonResponse
     {
-        $this->applyMode($r);
+        try {
+            $this->applyMode($r);
 
-        return response()->json(DemoConnection::effective());
+            return response()->json(DemoConnection::effective());
+        } catch (Throwable $e) {
+            return response()->json([
+                'connection' => $r->input('conn', config('database.default')),
+                'message' => 'Không kết nối được DB (' . $r->input('conn', config('database.default')) . '): ' . $e->getMessage(),
+            ], 200);
+        }
     }
 
-    public function products(): JsonResponse
+    /**
+     * Đặt GLOBAL sql_mode theo danh sách cờ tùy chọn hoặc preset
+     */
+    public function setGlobal(Request $r): JsonResponse
     {
+        $this->applyMode($r);
+        $connName = config('database.default');
+        $preset = (string) $r->input('preset', 'custom');
+        $pdo = DB::connection($connName)->getPdo();
+        $isMaria = str_contains(strtolower((string) $pdo->query('SELECT @@version')->fetchColumn()), 'mariadb');
+
+        if ($preset === 'loose') {
+            $newGlobal = 'NO_ENGINE_SUBSTITUTION';
+        } elseif ($preset === 'empty') {
+            $newGlobal = '';
+        } elseif ($preset === 'strict') {
+            $newGlobal = $isMaria
+                ? 'STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION'
+                : 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';
+        } else {
+            $allowed = array_values(array_intersect(DemoConnection::ALLOWED_GLOBAL_MODES, (array) $r->input('global_modes', [])));
+            if (! $isMaria) {
+                $allowed = array_values(array_diff($allowed, ['NO_AUTO_CREATE_USER']));
+            }
+            $newGlobal = implode(',', $allowed);
+        }
+
+        $sqlSetGlobal = "SET GLOBAL sql_mode = '$newGlobal'";
+        $pdo->exec($sqlSetGlobal);
+
+        // Mở lại kết nối theo mode hiện tại để trả về effective mới nhất
+        DB::purge($connName);
+        $this->applyMode($r);
+
+        return response()->json([
+            'sql' => $sqlSetGlobal,
+            'new_global' => $newGlobal,
+            'effective' => DemoConnection::effective(),
+        ]);
+    }
+
+    public function products(Request $r): JsonResponse
+    {
+        $this->applyMode($r);
+
         return response()->json($this->tables());
     }
 
-    public function reset(): JsonResponse
+    public function reset(Request $r): JsonResponse
     {
+        $this->applyMode($r);
         DB::statement('TRUNCATE TABLE products');
         DB::statement('TRUNCATE TABLE log_myisam');
         $seed = fn (string $note, int $stock) => [

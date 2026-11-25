@@ -9,8 +9,12 @@ services:
     environment:
       DB_HOST: mariadb   # trong mạng docker, gọi DB bằng tên service
       DB_PORT: "3306"
+      MYSQL_DB_HOST: mysql
+      MYSQL_DB_PORT: "3306"
     depends_on:
       mariadb:
+        condition: service_healthy
+      mysql:
         condition: service_healthy
 
   # MariaDB 10.11.14: GLOBAL sql_mode khởi tạo như dưới; đổi bằng HeidiSQL khi trình bày
@@ -31,14 +35,17 @@ services:
     volumes:
       - ./docker/initdb:/docker-entrypoint-initdb.d:ro
 
-  # Tùy chọn: docker compose --profile mysql up -d  (so sánh mặc định của MySQL 8.4)
+  # MySQL 8.4: chạy song song để chuyển đổi trực tiếp giữa MariaDB và MySQL trên giao diện
   mysql:
     image: mysql:8.4
-    profiles: ["mysql"]
     command: --character-set-server=utf8mb4
     environment:
       MYSQL_ROOT_PASSWORD: secret
       MYSQL_ROOT_HOST: "%"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-psecret"]
+      interval: 5s
+      retries: 20
     ports:
       - "3307:3306"
     volumes:

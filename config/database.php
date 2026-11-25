@@ -21,9 +21,19 @@ return [
     'default' => env('DB_CONNECTION', 'mariadb'),
 
     'connections' => [
-        'mariadb' => ['driver' => 'mariadb', 'strict' => true] + $common,
-        // Dùng khi so sánh với MySQL 8.4: DB_CONNECTION=mysql, DB_PORT=3307
-        'mysql' => ['driver' => 'mysql', 'strict' => true] + $common,
+        'mariadb' => [
+            'driver' => 'mariadb',
+            'strict' => true,
+            'host' => env('MARIADB_HOST', env('DB_HOST', '127.0.0.1')),
+            'port' => env('MARIADB_PORT', env('DB_PORT', '3308')),
+        ] + $common,
+        // So sánh trực tiếp với MySQL 8.4 ngay trên giao diện
+        'mysql' => [
+            'driver' => 'mysql',
+            'strict' => true,
+            'host' => env('MYSQL_DB_HOST', '127.0.0.1'),
+            'port' => env('MYSQL_DB_PORT', '3307'),
+        ] + $common,
     ],
 
     'migrations' => ['table' => 'migrations'],
