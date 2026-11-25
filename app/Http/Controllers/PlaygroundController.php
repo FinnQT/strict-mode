@@ -149,6 +149,16 @@ class PlaygroundController extends Controller
                     $rows = array_map(fn ($o) => (array) $o,
                         DB::select('SELECT name, note, SUM(stock) AS stock FROM products GROUP BY name'));
                     break;
+                case 'innodb_batch':
+                    $sent = [];
+                    DB::statement("DELETE FROM products WHERE note LIKE 'batch %'");
+                    $affected = DB::affectingStatement(
+                        "INSERT INTO products (name, price, stock, sale_date, note) VALUES
+                        ('Chuot 1', 150000, 10, '2026-01-15', 'batch 1'),
+                        ('Chuot 2', 150000, 999, '2026-01-15', 'batch 2'),
+                        ('Chuot 3', 150000, 20, '2026-01-15', 'batch 3')"
+                    );
+                    break;
                 case 'myisam':
                     $sent = [];
                     DB::statement('TRUNCATE TABLE log_myisam');
@@ -170,10 +180,13 @@ class PlaygroundController extends Controller
             }
 
             // Đọc lại dòng vừa ghi theo lastInsertId
-            if (! in_array($scenario, ['group_by', 'myisam'], true)) {
+            if (! in_array($scenario, ['group_by', 'myisam', 'innodb_batch'], true)) {
                 $id = (int) $db->getPdo()->lastInsertId();
                 $row = $id ? DB::table('products')->where('id', $id)->first() : null;
                 $stored = $row ? (array) $row : [];
+            }
+            if ($scenario === 'innodb_batch') {
+                $rows = array_map(fn ($o) => (array) $o, DB::select("SELECT id, name, price, stock, note FROM products WHERE note LIKE 'batch %' ORDER BY id"));
             }
             if ($scenario === 'myisam') {
                 $rows = array_map(fn ($o) => (array) $o, DB::select('SELECT * FROM log_myisam ORDER BY id'));
@@ -191,6 +204,9 @@ class PlaygroundController extends Controller
                 'pdo_message' => $pdo ? $pdo->getMessage() : null,
                 'laravel_message' => $e->getMessage(),
             ];
+            if ($scenario === 'innodb_batch') { // InnoDB có transaction: đọc lại để chứng minh 0 dòng nào thuộc lô batch bị lọt vào
+                $rows = array_map(fn ($o) => (array) $o, DB::select("SELECT id, name, price, stock, note FROM products WHERE note LIKE 'batch %' ORDER BY id"));
+            }
             if ($scenario === 'myisam') { // MyISAM không rollback: đọc lại để thấy dòng đã lỡ ghi
                 $rows = array_map(fn ($o) => (array) $o, DB::select('SELECT * FROM log_myisam ORDER BY id'));
             }

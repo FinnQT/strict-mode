@@ -1070,13 +1070,16 @@
               <div v-if="verdict(r).err" class="errline">{{ verdict(r).err }}</div>
             </div>
 
-            <div v-if="r.data.error" class="cap" style="font-size:13.5px">Không có bản ghi nào được lưu vào bảng.</div>
+            <div v-if="r.data.error && (!r.data.rows || !r.data.rows.length)" class="cap" style="font-size:13.5px">
+              <template v-if="r.sc === 'innodb_batch'">Đã rollback toàn bộ lô 3 dòng (kể cả dòng 1 hợp lệ 'Chuot 1') — 0 dòng nào thuộc lô batch được ghi vào bảng products.</template>
+              <template v-else>Không có bản ghi nào được lưu vào bảng.</template>
+            </div>
             <div v-else-if="r.data.rows" class="tbl-wrap" style="overflow-x:auto">
               <table class="tbl">
                 <thead><tr><th v-for="c in cols(r.data.rows)" :key="c">{{ c }}</th></tr></thead>
                 <tbody>
                   <tr v-for="(row, i) in r.data.rows" :key="i">
-                    <td v-for="c in cols(r.data.rows)" :key="c" :class="{ chg: r.sc === 'myisam' && c === 'level' && Number(row[c]) === 127 }">{{ fmt(row[c]) }}</td>
+                    <td v-for="c in cols(r.data.rows)" :key="c" :class="{ chg: (r.sc === 'myisam' && c === 'level' && Number(row[c]) === 127) || (r.sc === 'innodb_batch' && c === 'stock' && Number(row[c]) === 127) }">{{ fmt(row[c]) }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -1227,6 +1230,7 @@ const SC = [
   { id: 'zero_date', title: 'Ngày 0000-00-00', hint: 'Chỉ STRICT_TRANS_TABLES có chặn được không?', fields: base({ sale_date: '0000-00-00' }), compare: [custom(['STRICT_TRANS_TABLES']), { label: 'Preset strict', mode: 'strict' }] },
   { id: 'div_zero', title: 'Chia cho 0', hint: 'Thiếu ERROR_FOR_DIVISION_BY_ZERO thì 10/0 sẽ ra gì?', fields: { divisor: '0' }, compare: [custom(['STRICT_TRANS_TABLES']), custom(['STRICT_TRANS_TABLES', 'ERROR_FOR_DIVISION_BY_ZERO'])] },
   { id: 'group_by', title: 'ONLY_FULL_GROUP_BY', hint: 'Chọn cột note không nằm trong GROUP BY.', fields: {}, fixedSql: 'SELECT name, note, SUM(stock) AS stock FROM products GROUP BY name', compare: [LOOSE, STRICT] },
+  { id: 'innodb_batch', title: 'Bảng InnoDB (Rollback lô)', hint: 'Bảng products (InnoDB có transaction): chèn 3 dòng nhưng dòng thứ 2 lỗi (stock=999) thì dòng 1 có được rollback không?', fields: {}, fixedSql: "INSERT INTO products (name, price, stock, sale_date, note) VALUES\n  ('Chuot 1', 150000, 10,  '2026-01-15', 'batch 1'),\n  ('Chuot 2', 150000, 999, '2026-01-15', 'batch 2'),\n  ('Chuot 3', 150000, 20,  '2026-01-15', 'batch 3')", compare: [LOOSE, custom(['STRICT_TRANS_TABLES'])] },
   { id: 'myisam', title: 'Bảng MyISAM', hint: 'Bảng không có transaction: lỗi giữa chừng thì sao?', fields: {}, fixedSql: "TRUNCATE TABLE log_myisam;\nINSERT INTO log_myisam VALUES (1,1),(2,999),(3,3)", compare: [custom(['STRICT_TRANS_TABLES']), custom(['STRICT_ALL_TABLES'])] },
   { id: 'insert_ignore', title: 'Lối thoát INSERT IGNORE', hint: 'insertOrIgnore sinh INSERT IGNORE nên bỏ qua strict.', fields: base({ name: 'Tai nghe chong on', stock: '999' }), compare: [LOOSE, STRICT] },
 ];
@@ -1561,8 +1565,10 @@ createApp({
       if (d.error) {
         const err = `ERROR ${d.error.code} (${d.error.sqlstate}): ${d.error.message}`;
         if (r.sc === 'myisam' && d.rows && d.rows.length) return { tone: 'amber', text: 'Lỗi giữa chừng: MyISAM không rollback, các dòng trước đó đã nằm trong bảng.', err };
+        if (r.sc === 'innodb_batch') return { tone: 'mint', text: 'Đã chặn & Rollback toàn bộ: Lỗi ở dòng 2 (stock=999), InnoDB tự động rollback cả dòng 1 hợp lệ trước đó.', err };
         return { tone: 'mint', text: r.sc === 'group_by' ? 'Đã chặn: truy vấn bị từ chối, không có kết quả mơ hồ.' : 'Đã chặn: không có gì được ghi vào bảng.', err };
       }
+      if (r.sc === 'innodb_batch') return { tone: 'amber', text: 'Cả 3 dòng đều được ghi vào bảng products, nhưng dòng 2 (Chuot 2) bị cắt âm thầm stock từ 999 về 127.' };
       if (r.sc === 'group_by') return { tone: 'amber', text: 'Truy vấn vẫn chạy: cột note lấy từ một dòng bất kỳ trong nhóm, kết quả không xác định.' };
       if (n || w) {
         const parts = [];
@@ -1576,9 +1582,11 @@ createApp({
     outcome(r) {
       const d = r.data;
       if (d.error) {
-        if (r.sc === 'myisam' && d.rows.length) return `báo lỗi ${d.error.code} nhưng đã ghi dở ${d.rows.map((x) => `(${x.id},${x.level})`).join(' ')}`;
+        if (r.sc === 'myisam' && d.rows && d.rows.length) return `báo lỗi ${d.error.code} nhưng đã ghi dở ${d.rows.map((x) => `(${x.id},${x.level})`).join(' ')}`;
+        if (r.sc === 'innodb_batch') return `báo lỗi ${d.error.code} ở dòng 2 và rollback sạch cả 3 dòng (0 dòng bị lọt vào bảng)`;
         return `từ chối (ERROR ${d.error.code}) và không ghi gì`;
       }
+      if (r.sc === 'innodb_batch') return `ghi cả 3 dòng (dòng 2 bị cắt stock=127)`;
       if (r.sc === 'myisam') return `ghi ${d.rows.map((x) => `(${x.id},${x.level})`).join(' ')}`;
       if (r.sc === 'group_by') return `vẫn chạy, trả ${d.rows.length} dòng`;
       const ks = this.changedKeys(r);
@@ -1610,7 +1618,9 @@ createApp({
             isErr: true,
             desc: r.sc === 'myisam' && d.rows && d.rows.length
               ? 'Strict mode từ chối dòng lỗi, nhưng vì engine MyISAM không hỗ trợ transaction nên các dòng trước đó không được rollback.'
-              : 'Strict mode chặn câu lệnh ngay tại tầng database và hủy thao tác ghi.',
+              : r.sc === 'innodb_batch'
+                ? 'Bảng products dùng engine InnoDB (hỗ trợ transaction): khi dòng 2 gặp lỗi với STRICT_TRANS_TABLES, DB tự động rollback toàn bộ câu lệnh (thu hồi luôn cả dòng 1 hợp lệ).'
+                : 'Strict mode chặn câu lệnh ngay tại tầng database và hủy thao tác ghi.',
             detail: `ERROR ${e.code} (${e.sqlstate}): ${e.message}`,
           },
           {
